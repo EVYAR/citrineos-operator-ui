@@ -209,13 +209,14 @@ export const createGenericAuthProvider = (
   // Return the auth provider implementation
   return {
     login: async ({ email, password }) => {
-      const result = await signIn('generic', {
+      const signInResult = await signIn('generic', {
+        redirect: false,
         username: email,
         password,
-        redirect: false,
+        callbackUrl: '/overview',
       });
 
-      if (!result || result.error || !result.ok) {
+      if (!signInResult || signInResult.error) {
         return {
           success: false,
           error: {
@@ -227,7 +228,10 @@ export const createGenericAuthProvider = (
 
       const mockToken = 'mock_token_' + Math.random().toString(36).slice(2);
       saveToken(mockToken);
-      saveUser({ ...genericAdminUser, email });
+      saveUser({
+        ...genericAdminUser,
+        email,
+      });
 
       window.location.href = '/overview';
       return {
