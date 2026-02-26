@@ -9,6 +9,7 @@ import type {
   EvseDto,
 } from '@citrineos/base';
 import { Button } from '@lib/client/components/ui/button';
+import { ConfirmDialog } from '@lib/client/components/ui/confirm';
 import {
   Dialog,
   DialogContent,
@@ -35,6 +36,10 @@ interface EVSESListProps {
   id: number;
 }
 
+type PendingDeleteTarget =
+  | { type: 'connector'; item: ConnectorDto }
+  | { type: 'evse'; item: EvseDto };
+
 export const evsesFormUpsertGrid = 'grid grid-cols-2 xs:grid-cols-1 gap-6';
 
 export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
@@ -53,6 +58,8 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
     EvseClass | ConnectorClass | null
   >(null);
   const [evseId, setEvseId] = useState<number | null>(null);
+  const [pendingDeleteTarget, setPendingDeleteTarget] =
+    useState<PendingDeleteTarget | null>(null);
 
   const {
     query: { data, isLoading, refetch },
@@ -192,13 +199,26 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
   const handleConnectorDelete = useCallback(
     (connector: ConnectorDto) => {
       if (!connector.id) return;
-      if (!window.confirm('Delete this connector? This action cannot be undone.')) {
-        return;
-      }
+      setPendingDeleteTarget({ type: 'connector', item: connector });
+    },
+    [],
+  );
 
+  const handleEvseDelete = useCallback(
+    (evse: EvseDto) => {
+      if (!evse.id) return;
+      setPendingDeleteTarget({ type: 'evse', item: evse });
+    },
+    [],
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!pendingDeleteTarget?.item.id) return;
+
+    if (pendingDeleteTarget.type === 'connector') {
       deleteConnector(
         {
-          id: connector.id,
+          id: pendingDeleteTarget.item.id,
           resource: ResourceType.CONNECTORS,
           meta: {
             gqlMutation: CONNECTOR_DELETE_CASCADE_MUTATION,
@@ -206,38 +226,35 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
         },
         {
           onSuccess: () => {
+            setPendingDeleteTarget(null);
             void refetch();
           },
         },
       );
-    },
-    [deleteConnector, refetch],
-  );
+      return;
+    }
 
-  const handleEvseDelete = useCallback(
-    (evse: EvseDto) => {
-      if (!evse.id) return;
-      if (!window.confirm('Delete this EVSE and its connectors? This action cannot be undone.')) {
-        return;
-      }
+    deleteEvse(
+      {
+        id: pendingDeleteTarget.item.id,
+        resource: ResourceType.EVSES,
+        meta: {
+          gqlMutation: EVSE_DELETE_CASCADE_MUTATION,
+        },
+      },
+      {
+        onSuccess: () => {
+          setPendingDeleteTarget(null);
+          void refetch();
+        },
+      },
+    );
+  }, [deleteConnector, deleteEvse, pendingDeleteTarget, refetch]);
 
-      deleteEvse(
-        {
-          id: evse.id,
-          resource: ResourceType.EVSES,
-          meta: {
-            gqlMutation: EVSE_DELETE_CASCADE_MUTATION,
-          },
-        },
-        {
-          onSuccess: () => {
-            void refetch();
-          },
-        },
-      );
-    },
-    [deleteEvse, refetch],
-  );
+  const deleteDialogDescription =
+    pendingDeleteTarget?.type === 'evse'
+      ? 'Delete this EVSE and its connectors? This action cannot be undone.'
+      : 'Delete this connector? This action cannot be undone.';
 
   if (isLoading) return <p>Loading...</p>;
   if (!station) return <p>No Data Found</p>;
@@ -352,6 +369,22 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
           {renderModalContent()}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pendingDeleteTarget !== null}
+        loading={isDeletingConnector || isDeletingEvse}
+        title="Are you sure?"
+        description={deleteDialogDescription}
+        okText="Delete"
+        cancelText="Cancel"
+        okButtonVariant="destructive"
+        onOpenChange={(open) => {
+          if (!open && !isDeletingConnector && !isDeletingEvse) {
+            setPendingDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };
