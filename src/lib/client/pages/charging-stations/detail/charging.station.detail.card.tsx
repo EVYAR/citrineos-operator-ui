@@ -18,7 +18,7 @@ import {
 import { OCPPMessageClass } from '@lib/cls/ocpp.message.dto';
 import type { TransactionClass } from '@lib/cls/transaction.dto';
 import {
-  CHARGING_STATIONS_DELETE_MUTATION,
+  CHARGING_STATIONS_DELETE_CASCADE_MUTATION,
   CHARGING_STATIONS_GET_QUERY,
 } from '@lib/queries/charging.stations';
 import { ActionType, ResourceType } from '@lib/utils/access.types';
@@ -129,7 +129,7 @@ export const ChargingStationDetailCard = ({
         id: station.id!,
         resource: ResourceType.CHARGING_STATIONS,
         meta: {
-          gqlMutation: CHARGING_STATIONS_DELETE_MUTATION,
+          gqlMutation: CHARGING_STATIONS_DELETE_CASCADE_MUTATION,
         },
       },
       {

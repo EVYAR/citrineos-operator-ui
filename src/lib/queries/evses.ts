@@ -127,3 +127,17 @@ export const EVSE_EDIT_MUTATION = gql`
     }
   }
 `;
+
+export const EVSE_DELETE_CASCADE_MUTATION = gql`
+  mutation EvseDeleteCascade($id: Int!) {
+    delete_Transactions(where: { evseId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Connectors(where: { evseId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Evses_by_pk(id: $id) {
+      id
+    }
+  }
+`;

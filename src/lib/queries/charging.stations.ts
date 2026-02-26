@@ -442,3 +442,25 @@ export const CHARGING_STATIONS_DELETE_MUTATION = gql`
     }
   }
 `;
+
+export const CHARGING_STATIONS_DELETE_CASCADE_MUTATION = gql`
+  mutation ChargingStationsDeleteCascade($id: String!) {
+    delete_Transactions(where: { stationId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Connectors(where: { stationId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Evses(where: { stationId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_ChargingStations_by_pk(id: $id) {
+      id
+      isOnline
+      protocol
+      locationId
+      createdAt
+      updatedAt
+    }
+  }
+`;

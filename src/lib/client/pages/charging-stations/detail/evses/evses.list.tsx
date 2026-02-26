@@ -22,10 +22,12 @@ import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import type { ConnectorClass } from '@lib/cls/connector.dto';
 import type { EvseClass } from '@lib/cls/evse.dto';
 import { CHARGING_STATIONS_GET_QUERY } from '@lib/queries/charging.stations';
+import { CONNECTOR_DELETE_CASCADE_MUTATION } from '@lib/queries/connectors';
+import { EVSE_DELETE_CASCADE_MUTATION } from '@lib/queries/evses';
 import { ResourceType } from '@lib/utils/access.types';
 import { setSelectedChargingStation } from '@lib/utils/store/selected.charging.station.slice';
 import { getPlainToInstanceOptions } from '@lib/utils/tables';
-import { useOne } from '@refinedev/core';
+import { useDelete, useOne } from '@refinedev/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
@@ -37,6 +39,14 @@ export const evsesFormUpsertGrid = 'grid grid-cols-2 xs:grid-cols-1 gap-6';
 
 export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
   const dispatch = useDispatch();
+  const {
+    mutate: deleteConnector,
+    mutation: { isPending: isDeletingConnector },
+  } = useDelete();
+  const {
+    mutate: deleteEvse,
+    mutation: { isPending: isDeletingEvse },
+  } = useDelete();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'evse' | 'connector' | null>(null);
   const [selectedItem, setSelectedItem] = useState<
@@ -179,10 +189,55 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
     openModal('connector', connector, evseId);
   };
 
-  const handleConnectorAdd = (evseId: number | undefined) => {
-    if (evseId === undefined) return;
-    openModal('connector', null, evseId);
-  };
+  const handleConnectorDelete = useCallback(
+    (connector: ConnectorDto) => {
+      if (!connector.id) return;
+      if (!window.confirm('Delete this connector? This action cannot be undone.')) {
+        return;
+      }
+
+      deleteConnector(
+        {
+          id: connector.id,
+          resource: ResourceType.CONNECTORS,
+          meta: {
+            gqlMutation: CONNECTOR_DELETE_CASCADE_MUTATION,
+          },
+        },
+        {
+          onSuccess: () => {
+            void refetch();
+          },
+        },
+      );
+    },
+    [deleteConnector, refetch],
+  );
+
+  const handleEvseDelete = useCallback(
+    (evse: EvseDto) => {
+      if (!evse.id) return;
+      if (!window.confirm('Delete this EVSE and its connectors? This action cannot be undone.')) {
+        return;
+      }
+
+      deleteEvse(
+        {
+          id: evse.id,
+          resource: ResourceType.EVSES,
+          meta: {
+            gqlMutation: EVSE_DELETE_CASCADE_MUTATION,
+          },
+        },
+        {
+          onSuccess: () => {
+            void refetch();
+          },
+        },
+      );
+    },
+    [deleteEvse, refetch],
+  );
 
   if (isLoading) return <p>Loading...</p>;
   if (!station) return <p>No Data Found</p>;
@@ -250,6 +305,14 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
                             Edit
                           </Button>
                           <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={isDeletingEvse}
+                            onClick={() => handleEvseDelete(evse)}
+                          >
+                            Delete
+                          </Button>
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openModal('connector', null, evseId)}
@@ -267,7 +330,8 @@ export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
                             onEdit={(connector) =>
                               handleConnectorEdit(connector, evseId)
                             }
-                            onAdd={() => handleConnectorAdd(evseId)}
+                            onDelete={handleConnectorDelete}
+                            isDeleting={isDeletingConnector}
                           />
                         </td>
                       </tr>

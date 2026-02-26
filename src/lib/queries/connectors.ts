@@ -152,3 +152,14 @@ export const CONNECTOR_EDIT_MUTATION = gql`
     }
   }
 `;
+
+export const CONNECTOR_DELETE_CASCADE_MUTATION = gql`
+  mutation ConnectorDeleteCascade($id: Int!) {
+    delete_Transactions(where: { connectorId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Connectors_by_pk(id: $id) {
+      id
+    }
+  }
+`;
