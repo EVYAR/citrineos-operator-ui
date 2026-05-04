@@ -1,5 +1,12 @@
 FROM node:24-alpine AS base
 
+# Use Iranian mirrors
+RUN ALPINE_VERSION=$(cat /etc/alpine-release | cut -d'.' -f1-2) && \
+    echo "https://mirror.arvancloud.ir/alpine/v${ALPINE_VERSION}/main" > /etc/apk/repositories && \
+    echo "https://mirror.arvancloud.ir/alpine/v${ALPINE_VERSION}/community" >> /etc/apk/repositories && \
+    apk update
+RUN npm config set registry https://mirror.abrha.net/repository/npm/
+
 FROM base AS deps
 
 RUN apk add --no-cache libc6-compat
