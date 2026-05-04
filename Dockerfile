@@ -5,7 +5,7 @@ RUN ALPINE_VERSION=$(cat /etc/alpine-release | cut -d'.' -f1-2) && \
     echo "https://mirror.arvancloud.ir/alpine/v${ALPINE_VERSION}/main" > /etc/apk/repositories && \
     echo "https://mirror.arvancloud.ir/alpine/v${ALPINE_VERSION}/community" >> /etc/apk/repositories && \
     apk update
-RUN npm config set registry https://mirror.abrha.net/repository/npm/
+RUN npm config set registry https://mirror2.chabokan.net/npm/
 
 FROM base AS deps
 
