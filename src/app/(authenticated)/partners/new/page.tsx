@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { PartnersUpsert } from '@lib/client/pages/partners/upsert/partners.upsert';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-export default function NewPartnerPage() {
-  return <PartnersUpsert params={{}} />;
+export default function PartnerNewPage() {
+  return <CsmsUnavailableFeature title="Partners" />;
 }

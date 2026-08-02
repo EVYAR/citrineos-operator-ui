@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { PartnersList } from '@lib/client/pages/partners/list/partners.list';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-export default function ListPartnerPage() {
-  return <PartnersList />;
+export default function PartnersPage() {
+  return <CsmsUnavailableFeature title="Partners" />;
 }

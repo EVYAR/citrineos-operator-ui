@@ -7,10 +7,9 @@ import React from 'react';
 import { MenuSection } from '@lib/client/components/main-menu/main.menu';
 import { Card, CardContent, CardHeader } from '@lib/client/components/ui/card';
 import { Circle } from '@lib/client/pages/overview/circle/circle';
-import { CHARGING_STATIONS_STATUS_COUNT_QUERY } from '@lib/queries/charging.stations';
 import { ActionType, ResourceType } from '@lib/utils/access.types';
 import { AccessDeniedFallbackCard } from '@lib/client/components/access-denied-fallback-card';
-import { CanAccess, useCustom, useTranslate } from '@refinedev/core';
+import { CanAccess, useList, useTranslate } from '@refinedev/core';
 import { ChevronRightIcon } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { heading2Style } from '@lib/client/styles/page';
@@ -28,14 +27,14 @@ export const OnlineStatusCard = () => {
 
   const {
     query: { data, isLoading, error },
-  } = useCustom({
-    meta: {
-      gqlQuery: CHARGING_STATIONS_STATUS_COUNT_QUERY,
-    },
-  } as any);
+  } = useList({
+    resource: ResourceType.CHARGING_STATIONS,
+    pagination: { current: 1, pageSize: 500 },
+  });
 
-  const onlineCount = data?.data?.online?.aggregate?.count || 0;
-  const offlineCount = data?.data?.offline?.aggregate?.count || 0;
+  const stations = data?.data ?? [];
+  const onlineCount = stations.filter((s: any) => s.isOnline).length;
+  const offlineCount = stations.length - onlineCount;
 
   if (isLoading) return <OverviewCardSkeleton />;
 

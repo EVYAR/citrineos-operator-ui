@@ -7,12 +7,11 @@ import {
   type AuthenticationContextProvider,
   type User,
 } from '@/lib/utils/access.types';
-import config from '@/lib/utils/config';
 import { getSession, signIn, signOut } from 'next-auth/react';
 import type { AuthProvider } from '@refinedev/core';
 import { HasuraHeader, HasuraRole } from '@lib/utils/hasura.types';
 import React, { useEffect } from 'react';
-import { parseJwt, getTokenClaim } from '@lib/utils/jwt';
+import { parseJwt } from '@lib/utils/jwt';
 
 export enum KeycloakRole {
   ADMIN = 'admin',
@@ -32,8 +31,6 @@ export interface KeycloakPermissions {
   tenants?: string[];
   resources?: Record<string, string[]>;
 }
-
-const HASURA_CLAIM = config.hasuraClaim!;
 
 /**
  * Keycloak Login Page Component
@@ -88,36 +85,24 @@ export const createKeycloakAuthProvider = (): AuthProvider &
   };
 
   const getHasuraHeaders = async (): Promise<Map<HasuraHeader, string>> => {
+    // Legacy access-control helper only — CSMS uses Bearer JWT, not Hasura headers.
     const hasuraHeaders = new Map<HasuraHeader, string>();
+    const permissions = await getPermissions();
+    const roles = permissions.roles;
+    if (roles && roles.length > 0 && roles.includes(KeycloakRole.ADMIN)) {
+      hasuraHeaders.set(HasuraHeader.X_HASURA_ROLE, HasuraRole.ADMIN);
+    } else {
+      hasuraHeaders.set(HasuraHeader.X_HASURA_ROLE, HasuraRole.USER);
+    }
     const session = await getSession();
-    if (!session) {
-      return hasuraHeaders;
-    }
-    const token = (session as any).accessToken;
-    if (!token) {
-      return hasuraHeaders;
-    }
-    const tokenParsed = parseJwt(token);
-
-    // Set Hasura role
-    const hasuraClaims = getTokenClaim(tokenParsed, HASURA_CLAIM);
-    if (!hasuraClaims) {
-      const permissions = await getPermissions();
-      const roles = permissions.roles;
-
-      if (roles && roles.length > 0 && roles.includes(KeycloakRole.ADMIN)) {
-        hasuraHeaders.set(HasuraHeader.X_HASURA_ROLE, HasuraRole.ADMIN);
-      } else {
-        hasuraHeaders.set(HasuraHeader.X_HASURA_ROLE, HasuraRole.USER);
+    const token = (session as any)?.accessToken;
+    if (token) {
+      const tokenParsed = parseJwt(token);
+      const tenantId = tokenParsed.tenantId ?? tokenParsed.tenant_id;
+      if (tenantId) {
+        hasuraHeaders.set(HasuraHeader.X_HASURA_TENANT_ID, String(tenantId));
       }
     }
-
-    // Set Hasura tenant ID
-    const tenantId = tokenParsed.tenantId;
-    if (tenantId) {
-      hasuraHeaders.set(HasuraHeader.X_HASURA_TENANT_ID, tenantId);
-    }
-
     return hasuraHeaders;
   };
 

@@ -6,14 +6,6 @@ import { ResourceType } from '@lib/utils/access.types';
 
 export const resources = [
   {
-    name: ResourceType.AUTHORIZATIONS,
-    list: '/authorizations',
-    create: '/authorizations/new',
-    show: '/authorizations/:id',
-    edit: '/authorizations/:id/edit',
-    meta: { canDelete: false },
-  },
-  {
     name: ResourceType.CHARGING_STATIONS,
     list: '/charging-stations',
     create: '/charging-stations/new',
@@ -28,18 +20,11 @@ export const resources = [
     edit: '/locations/:id/edit',
   },
   {
-    name: ResourceType.PARTNERS,
-    list: '/partners',
-    create: '/partners/new',
-    show: '/partners/:id',
-    edit: '/partners/:id/edit',
-  },
-  {
     name: ResourceType.TRANSACTIONS,
     list: '/transactions',
     show: '/transactions/:id',
     meta: {
-      canDelete: true,
+      canDelete: false,
     },
   },
 ];

@@ -15,27 +15,24 @@ const getConfig: () => {
   googleMapsOverviewMapId?: string;
   defaultMapCenterLatitude: number;
   defaultMapCenterLongitude: number;
-  hasuraAdminSecret?: string; // Not recommended for use in production; use your authProvider instead.
-  hasuraClaim?: string;
   tenantId: string;
-  apiUrl: string;
-  wsUrl: string;
-  citrineCoreUrl?: string;
+  /** CSMS JWT REST base, including `/api` prefix */
+  csmsApiUrl: string;
   fileServer?: string;
   logoUrl?: string;
   metricsUrl?: string;
   adminEmail?: string;
   adminPassword?: string;
   authProvider: AuthProviderType;
-  keycloakUrl?: string; // The publicly accessible Keycloak URL that user browsers will be redirected to for login.
-  keycloakServerUrl?: string; // If your application server needs to use a different URL to reach Keycloak (e.g., an internal service URL in Kubernetes), set this. Otherwise, the server will use KEYCLOAK_URL.
+  keycloakUrl?: string;
+  keycloakServerUrl?: string;
   keycloakRealm?: string;
   keycloakClientId?: string;
   keycloakClientSecret?: string;
   awsRegion?: string;
   awsAccessKeyId?: string;
   awsSecretAccessKey?: string;
-  awsSessionToken?: string; // Optional. Needed for temporary credentials
+  awsSessionToken?: string;
   awsS3BucketName?: string;
   awsS3CoreBucketName?: string;
   fileStorageType?: string;
@@ -64,19 +61,14 @@ const getConfig: () => {
     defaultMapCenterLatitude: process.env
       .NEXT_PUBLIC_DEFAULT_MAP_CENTER_LATITUDE
       ? parseFloat(process.env.NEXT_PUBLIC_DEFAULT_MAP_CENTER_LATITUDE)
-      : 39.833333, // Approximate center of contiguous USA
+      : 39.833333,
     defaultMapCenterLongitude: process.env
       .NEXT_PUBLIC_DEFAULT_MAP_CENTER_LONGITUDE
       ? parseFloat(process.env.NEXT_PUBLIC_DEFAULT_MAP_CENTER_LONGITUDE)
-      : -98.583333, // Approximate center of contiguous USA
-    hasuraAdminSecret: process.env.HASURA_ADMIN_SECRET,
-    hasuraClaim:
-      process.env.NEXT_PUBLIC_HASURA_CLAIM || 'https://hasura.io/jwt/claims',
+      : -98.583333,
     tenantId: process.env.NEXT_PUBLIC_TENANT_ID || '1',
-    apiUrl:
-      process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8090/v1/graphql',
-    wsUrl: process.env.NEXT_PUBLIC_WS_URL || 'ws://localhost:8090/v1/graphql',
-    citrineCoreUrl: process.env.NEXT_PUBLIC_CITRINE_CORE_URL,
+    csmsApiUrl:
+      process.env.NEXT_PUBLIC_CSMS_API_URL || 'http://localhost:3010/api',
     fileServer: process.env.NEXT_PUBLIC_FILE_SERVER_URL,
     logoUrl: process.env.NEXT_PUBLIC_LOGO_URL,
     metricsUrl: process.env.NEXT_PUBLIC_METRICS_URL,

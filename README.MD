@@ -22,12 +22,13 @@ SPDX-License-Identifier: Apache-2.0
 platform for managing Electric Vehicle (EV) charging infrastructure.
 
 This repository contains the **Operator-facing User Interface** and related tooling.  
-It is designed to work together with **CitrineOS Core**, which provides the charging station management logic,
-OCPP message handling, persistence layer, and GraphQL APIs.
+It is designed to work with **evyar-csms-server** (JWT REST) for product data and commands.
+`citrineos-adapter` remains the CSMS→Core command/event boundary — the browser never calls
+adapter or Hasura directly (ADAPTER-0006).
 
 > ⚠️ **Important:**  
 > The Operator UI **does not run standalone**.  
-> A running instance of **CitrineOS Core** (including Hasura GraphQL Engine) is required.
+> A running instance of **evyar-csms-server** is required (`NEXT_PUBLIC_CSMS_API_URL`).
 
 ---
 
@@ -50,7 +51,7 @@ OCPP message handling, persistence layer, and GraphQL APIs.
   - [Add an Authorization (ID Token)](#add-an-authorization-id-token)
   - [Start the Charging Station (EVerest)](#start-the-charging-station-everest)
 - [Usage](#usage)
-- [Hasura Authentication](#hasura-authentication)
+- [CSMS Authentication & Config](#csms-authentication--config)
 - [Related Documentation](#related-documentation)
 - [Contributing](#contributing)
 - [Licensing](#licensing)
@@ -63,8 +64,8 @@ OCPP message handling, persistence layer, and GraphQL APIs.
 The CitrineOS Operator UI provides operators with:
 
 - Visibility into charging stations, connectors, sessions, and transactions
-- Operational controls via CitrineOS Core Message APIs
-- Data access through **Hasura GraphQL Engine**
+- Operational controls via **evyar-csms-server** station command APIs
+- Data access through CSMS JWT REST (Locations / Stations / Transactions)
 - A modern React-based UI built with **Refine**
 
 The UI consumes:
@@ -361,29 +362,32 @@ You can now track OCPP logs for the charging station.
 ## Usage
 
 Once running, the Operator UI allows you to:
-- View and manage charging stations and connectors
+- View and manage charging stations and locations
 - Monitor transactions and sessions
-- Trigger charging station commands (via CitrineOS Core)
-- Query and manage data through Hasura-backed GraphQL APIs
+- Trigger charging station commands via CSMS (`/api/stations/:id/...`)
 
-## Hasura Authentication
-There are two ways to authenticate to Hasura:
+## CSMS Authentication & Config
 
-1. If you have **uncommented* the Docker environment variable `HASURA_GRAPHQL_ADMIN_SECRET` in `citrineos-core`: 2. Ensure your `.env.local` has the `HASURA_ADMIN_SECRET` uncommented out 3. Please note that it is not recommended to use a Hasura Admin Secret in production.
-2. If you have commented the Docker environment variable `HASURA_GRAPHQL_ADMIN_SECRET` in `citrineos-core`: 5. Ensure your `.env.local` has the `HASURA_ADMIN_SECRET` commented out, as the auth will be handled by your auth provider automatically.
+Set `NEXT_PUBLIC_CSMS_API_URL` to the CSMS REST base (include `/api`), e.g.
+`http://localhost:3010/api`. Authenticate with the configured auth provider
+(`generic` or `keycloak`); the access token is sent as `Authorization: Bearer`.
+
+Live updates use an interim **polling** live provider until CSMS-0018 SSE is available.
+
+Authorizations and Partners screens are not available on this boundary yet
+(no CSMS operator CRUD). Do not reintroduce direct Hasura access.
+
+Boundary CI gate:
+
+```bash
+npm test
+```
 
 ## Related Documentation
 
-- **CitrineOS Core**
-  - [Docs](https://github.com/citrineos/citrineos-core)
-- **CitrineOS Project Docs**
-  - [Docs](https://citrineos.github.io)
-- **Refine**
-  - [Docs](https://refine.dev/docs)
-- **Hasura GraphQL Engine**
-  - [Docs](https://hasura.io/docs/2.0/index/)
-- **Postgres Data Connector**
-  - [Docs](https://hasura.io/docs/2.0/databases/postgres/index/)
+- **evyar-csms-server** — product JWT REST APIs
+- **citrineos-adapter** — CSMS→Core command/event ACL (not called from the browser)
+- **Refine** — [Docs](https://refine.dev/docs)
 
 ## Contributing
 We welcome contributions from the community. If you would like to contribute to CitrineOS, please follow

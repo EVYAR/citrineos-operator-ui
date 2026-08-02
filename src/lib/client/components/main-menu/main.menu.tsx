@@ -9,12 +9,10 @@ import {
   ArrowLeftRight,
   ChevronLeft,
   ChevronRight,
-  Clipboard,
   EvCharger,
   HelpCircle,
   Home,
   MapPin,
-  Users,
 } from 'lucide-react';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -77,19 +75,9 @@ export const MainMenu = ({ activeSection }: MainMenuProps) => {
       icon: <EvCharger className={sidebarIconSize} />,
     },
     {
-      key: `/${MenuSection.AUTHORIZATIONS}`,
-      label: translate('Authorizations.Authorizations'),
-      icon: <Clipboard className={sidebarIconSize} />,
-    },
-    {
       key: `/${MenuSection.TRANSACTIONS}`,
       label: translate('Transactions.Transactions'),
       icon: <ArrowLeftRight className={sidebarIconSize} />,
-    },
-    {
-      key: `/${MenuSection.PARTNERS}`,
-      label: translate('TenantPartners.TenantPartners'),
-      icon: <Users className={sidebarIconSize} />,
     },
   ];
 

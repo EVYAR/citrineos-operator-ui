@@ -19,7 +19,9 @@
     "prettier": "prettier --write .",
     "lint": "npx eslint ./",
     "lint-fix": "npm run prettier && npx eslint --fix ./",
-    "refine": "refine"
+    "refine": "refine",
+    "test": "node --test tests/*.test.mjs",
+    "test:boundaries": "npm test"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "3.930.0",
@@ -45,7 +47,6 @@
     "@refinedev/cli": "2.16.48",
     "@refinedev/core": "5.0.0",
     "@refinedev/devtools": "2.0.1",
-    "@refinedev/hasura": "7.0.0",
     "@refinedev/kbar": "2.0.0",
     "@refinedev/nextjs-router": "7.0.0",
     "@refinedev/react-hook-form": "5.0.2",

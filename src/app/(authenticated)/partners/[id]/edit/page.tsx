@@ -2,13 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { PartnersUpsert } from '@lib/client/pages/partners/upsert/partners.upsert';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function EditPartnerPage({ params }: PageProps) {
-  const { id } = await params;
-  return <PartnersUpsert params={{ id }} />;
+export default function PartnerEditPage() {
+  return <CsmsUnavailableFeature title="Partners" />;
 }

@@ -3,8 +3,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import React from 'react';
-import { BaseRestClient } from './BaseRestClient';
-import type { SystemConfig } from '@citrineos/base';
 import {
   Dialog,
   DialogContent,
@@ -15,49 +13,29 @@ import {
 } from '@lib/client/components/ui/dialog';
 import { Button } from '@lib/client/components/ui/button';
 
-let systemConfig: SystemConfig | null = null;
-const client = new BaseRestClient(null);
+const CONSENT_KEY = 'evyar.telemetryConsent';
 
 interface TelemetryConsentModalProps {
-  /** Whether the modal is visible */
   visible: boolean;
-  /** Handle user decision; receives `true` if user accepts, `false` if user rejects */
   onDecision: (agreed: boolean) => void;
 }
 
+/** ADAPTER-0006: Core `/ocpprouter/systemConfig` removed; consent is local-only. */
 export async function checkTelemetryConsent(): Promise<boolean | undefined> {
-  try {
-    const systemConfigRaw = await client.getRaw(`/ocpprouter/systemConfig`);
-    systemConfig = systemConfigRaw.data as SystemConfig;
-    const telemetryConsent = systemConfig.userPreferences.telemetryConsent;
-    if (typeof telemetryConsent === 'boolean') {
-      return telemetryConsent;
-    }
-  } catch (error) {
-    console.error('error checking system config', error);
-  }
+  if (typeof window === 'undefined') return undefined;
+  const stored = window.localStorage.getItem(CONSENT_KEY);
+  if (stored === 'true') return true;
+  if (stored === 'false') return false;
   return undefined;
 }
 
 export async function saveTelemetryConsent(
   telemetryConsent: boolean,
 ): Promise<void> {
-  if (systemConfig === null) {
-    throw new Error('System config not initialized');
-  }
-  systemConfig.userPreferences.telemetryConsent = telemetryConsent;
-  try {
-    await client.putRaw(`/ocpprouter/systemConfig`, systemConfig);
-  } catch (error) {
-    console.error('Error saving telemetry consent', error);
-  }
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(CONSENT_KEY, String(telemetryConsent));
 }
 
-/**
- * TelemetryConsentModal
- *
- * Displays a blocking modal to request consent for telemetry.
- */
 export const TelemetryConsentModal: React.FC<TelemetryConsentModalProps> = ({
   visible,
   onDecision,

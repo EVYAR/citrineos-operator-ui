@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { AuthorizationsList } from '@lib/client/pages/authorizations/list/authorizations.list';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-export default function ListAuthorizationPage() {
-  return <AuthorizationsList />;
+export default function AuthorizationsPage() {
+  return <CsmsUnavailableFeature title="Authorizations" />;
 }

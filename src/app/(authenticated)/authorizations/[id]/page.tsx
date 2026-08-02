@@ -2,13 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { AuthorizationDetail } from '@lib/client/pages/authorizations/detail/authorization.detail';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-type PageProps = {
-  params: Promise<{ id: string }>;
-};
-
-export default async function ShowAuthorizationPage({ params }: PageProps) {
-  const { id } = await params;
-  return <AuthorizationDetail params={{ id }} />;
+export default function AuthorizationDetailPage() {
+  return <CsmsUnavailableFeature title="Authorizations" />;
 }

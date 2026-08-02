@@ -3,20 +3,18 @@
 // SPDX-License-Identifier: Apache-2.0
 'use client';
 
-import React, { useState } from 'react';
+import type { ChargingStationDto } from '@citrineos/base';
 import {
-  type ChargingStationDto,
   type ConnectorStatusEnumType,
   type EvseDto,
   ConnectorStatusEnum,
 } from '@citrineos/base';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import { LatestStatusNotificationClass } from '@lib/cls/latest.status.notification.dto';
-import { GET_CHARGING_STATIONS_WITH_LOCATION_AND_LATEST_STATUS_NOTIFICATIONS_AND_TRANSACTIONS } from '@lib/queries/charging.stations';
 import { ActionType, ResourceType } from '@lib/utils/access.types';
-import { useGqlCustom } from '@lib/utils/use-gql-custom';
-import { CanAccess, useTranslate } from '@refinedev/core';
+import { CanAccess, useList, useTranslate } from '@refinedev/core';
 import { plainToInstance } from 'class-transformer';
+import { getPlainToInstanceOptions } from '@lib/utils/tables';
 import { Card, CardContent, CardHeader } from '@lib/client/components/ui/card';
 import { ChargerActivityStationsSheet } from '@lib/client/pages/overview/charger-activity/charger.activity.stations.sheet';
 import { heading2Style } from '@lib/client/styles/page';
@@ -24,6 +22,7 @@ import { PercentageCircle } from '@lib/client/pages/overview/percentage-circle/p
 import { ChargerStatusEnum } from '@lib/utils/enums';
 import { OverviewCardSkeleton } from '@lib/client/pages/overview/overview.card.skeleton';
 import { AccessDeniedFallbackCard } from '@lib/client/components/access-denied-fallback-card';
+import React, { useState } from 'react';
 
 interface ChargerItem {
   station: ChargingStationDto;
@@ -193,12 +192,13 @@ export const ChargerActivityCard: React.FC = () => {
 
   const {
     query: { data, isLoading, error },
-  } = useGqlCustom({
-    gqlQuery:
-      GET_CHARGING_STATIONS_WITH_LOCATION_AND_LATEST_STATUS_NOTIFICATIONS_AND_TRANSACTIONS,
+  } = useList<ChargingStationDto>({
+    resource: ResourceType.CHARGING_STATIONS,
+    pagination: { current: 1, pageSize: 200 },
+    queryOptions: getPlainToInstanceOptions(ChargingStationClass),
   });
 
-  const stations: ChargingStationDto[] = data?.data.ChargingStations || [];
+  const stations: ChargingStationDto[] = data?.data || [];
 
   if (isLoading) return <OverviewCardSkeleton />;
 

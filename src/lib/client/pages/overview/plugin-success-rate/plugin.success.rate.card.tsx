@@ -4,10 +4,9 @@
 'use client';
 
 import React from 'react';
-import { TRANSACTION_SUCCESS_RATE_QUERY } from '@lib/queries/transactions';
 import { ActionType, ResourceType } from '@lib/utils/access.types';
 import { AccessDeniedFallbackCard } from '@lib/client/components/access-denied-fallback-card';
-import { CanAccess, useCustom, useTranslate } from '@refinedev/core';
+import { CanAccess, useList, useTranslate } from '@refinedev/core';
 import { Card, CardContent, CardHeader } from '@lib/client/components/ui/card';
 import { heading2Style } from '@lib/client/styles/page';
 import { OverviewCardSkeleton } from '@lib/client/pages/overview/overview.card.skeleton';
@@ -17,14 +16,16 @@ export const PluginSuccessRateCard = () => {
 
   const {
     query: { data, isLoading, error },
-  } = useCustom({
-    meta: {
-      gqlQuery: TRANSACTION_SUCCESS_RATE_QUERY,
-    },
-  } as any);
+  } = useList({
+    resource: ResourceType.TRANSACTIONS,
+    pagination: { current: 1, pageSize: 500 },
+  });
 
-  const successCount = data?.data?.success?.aggregate?.count || 0;
-  const totalCount = data?.data?.total?.aggregate?.count || 0;
+  const transactions = data?.data ?? [];
+  const totalCount = transactions.length;
+  const successCount = transactions.filter(
+    (t: any) => t.status === 'Completed' || t.endTime || t.endedAt,
+  ).length;
   const percentage = totalCount === 0 ? 0 : (successCount / totalCount) * 100;
   const roundedPercentage = Math.round(percentage * 10) / 10;
 

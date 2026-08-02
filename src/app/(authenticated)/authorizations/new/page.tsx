@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: Apache-2.0
 
-import { AuthorizationUpsert } from '@lib/client/pages/authorizations/upsert/authorization.upsert';
+import { CsmsUnavailableFeature } from '@lib/client/components/csms-unavailable-feature';
 
-export default function NewAuthorizationPage() {
-  return <AuthorizationUpsert params={{}} />;
+export default function AuthorizationNewPage() {
+  return <CsmsUnavailableFeature title="Authorizations" />;
 }

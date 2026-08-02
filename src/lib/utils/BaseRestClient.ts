@@ -10,7 +10,65 @@ import type { AxiosInstance, AxiosRequestConfig, AxiosResponse } from 'axios';
 import axios from 'axios';
 import config from './config';
 
-const CITRINE_CORE_URL = config.citrineCoreUrl;
+const CSMS_API_URL = (config.csmsApiUrl || '').replace(/\/$/, '');
+
+/**
+ * Map legacy CitrineOS Core command paths to CSMS station routes.
+ * Input examples:
+ *   /configuration/reset?identifier=STATION&tenantId=1
+ *   /evdriver/remoteStartTransaction?identifier=STATION&tenantId=1
+ */
+export function mapCoreCommandPathToCsms(url: string): string {
+  const [rawPath, query = ''] = url.split('?');
+  const params = new URLSearchParams(query);
+  const stationId =
+    params.get('identifier') ||
+    params.get('stationId') ||
+    params.get('id') ||
+    '';
+
+  const path = rawPath.replace(/^\//, '');
+
+  const evDriverMap: Record<string, string> = {
+    'evdriver/requestStartTransaction': 'remote-start',
+    'evdriver/remoteStartTransaction': 'remote-start',
+    'evdriver/requestStopTransaction': 'remote-stop',
+    'evdriver/remoteStopTransaction': 'remote-stop',
+    'evdriver/unlockConnector': 'unlock-connector',
+    'evdriver/clearCache': 'clear-cache',
+  };
+
+  const configurationMap: Record<string, string> = {
+    'configuration/reset': 'reset',
+    'configuration/changeAvailability': 'change-availability',
+    'configuration/triggerMessage': 'trigger-message',
+    'configuration/updateFirmware': 'update-firmware',
+    'configuration/getConfiguration': 'get-configuration',
+    'configuration/changeConfiguration': 'change-configuration',
+    'configuration/setNetworkProfile': 'set-network-profile',
+    'configuration/password': 'password',
+    'configuration/dataTransfer': 'data-transfer',
+  };
+
+  if (path in evDriverMap && stationId) {
+    return `/stations/${encodeURIComponent(stationId)}/ev-driver/${evDriverMap[path]}`;
+  }
+  if (path in configurationMap && stationId) {
+    return `/stations/${encodeURIComponent(stationId)}/configuration/${configurationMap[path]}`;
+  }
+  if (path === 'configuration/serverNetworkProfile' && stationId) {
+    return `/stations/${encodeURIComponent(stationId)}/configuration/network-profiles`;
+  }
+  if (path === 'configuration/password') {
+    // Body carries stationId for password updates in some modals.
+    return stationId
+      ? `/stations/${encodeURIComponent(stationId)}/configuration/password`
+      : url;
+  }
+
+  // Unsupported Core-only paths (ocpprouter, etc.) — leave as-is so callers surface the error.
+  return url.startsWith('/') ? url : `/${url}`;
+}
 
 export class MissingRequiredParamException extends Error {
   override name = 'MissingRequiredParamException' as const;
@@ -27,14 +85,9 @@ export class BaseRestClient {
   private axiosInstance: AxiosInstance;
   private _baseUrl: string;
 
-  constructor(ocppVersion: OCPPVersion | null = OCPPVersion.OCPP2_0_1) {
-    if (ocppVersion === null) {
-      this._baseUrl = `${CITRINE_CORE_URL}/data`;
-    } else if (ocppVersion === OCPPVersion.OCPP1_6) {
-      this._baseUrl = `${CITRINE_CORE_URL}/ocpp/1.6`;
-    } else {
-      this._baseUrl = `${CITRINE_CORE_URL}/ocpp/2.0.1`;
-    }
+  constructor(_ocppVersion: OCPPVersion | null = OCPPVersion.OCPP2_0_1) {
+    // ADAPTER-0006: all command egress goes through CSMS (OCPP version no longer selects Core base URL).
+    this._baseUrl = CSMS_API_URL;
     this.axiosInstance = this.createAxiosInstance();
   }
 
@@ -51,7 +104,7 @@ export class BaseRestClient {
     url: string,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    return this.axiosInstance.options<T>(url, config!);
+    return this.axiosInstance.options<T>(mapCoreCommandPathToCsms(url), config!);
   }
 
   async options<T>(path: string, config: AxiosRequestConfig): Promise<T> {
@@ -64,8 +117,9 @@ export class BaseRestClient {
     url: string,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    incrementRequestCount({ url: url });
-    return this.axiosInstance.get<T>(url, config!);
+    const mapped = mapCoreCommandPathToCsms(url);
+    incrementRequestCount({ url: mapped });
+    return this.axiosInstance.get<T>(mapped, config!);
   }
 
   async get<T>(path: string, config: AxiosRequestConfig): Promise<T> {
@@ -79,8 +133,9 @@ export class BaseRestClient {
     url: string,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    incrementRequestCount({ url: url });
-    return this.axiosInstance.delete<T>(url, config!);
+    const mapped = mapCoreCommandPathToCsms(url);
+    incrementRequestCount({ url: mapped });
+    return this.axiosInstance.delete<T>(mapped, config!);
   }
 
   async del<T>(path: string, config: AxiosRequestConfig): Promise<T> {
@@ -95,8 +150,9 @@ export class BaseRestClient {
     body: any,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    incrementRequestCount({ url: url });
-    return this.axiosInstance.post<T>(url, body, config!);
+    const mapped = mapCoreCommandPathToCsms(url);
+    incrementRequestCount({ url: mapped });
+    return this.axiosInstance.post<T>(mapped, body, config!);
   }
 
   async post<T>(
@@ -115,8 +171,9 @@ export class BaseRestClient {
     body: any,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    incrementRequestCount({ url: url });
-    return this.axiosInstance.patch<T>(url, body, config!);
+    const mapped = mapCoreCommandPathToCsms(url);
+    incrementRequestCount({ url: mapped });
+    return this.axiosInstance.patch<T>(mapped, body, config!);
   }
 
   async patch<T>(
@@ -135,8 +192,9 @@ export class BaseRestClient {
     body: any,
     config?: AxiosRequestConfig,
   ): Promise<AxiosResponse<T>> {
-    incrementRequestCount({ url: url });
-    return this.axiosInstance.put<T>(url, body, config!);
+    const mapped = mapCoreCommandPathToCsms(url);
+    incrementRequestCount({ url: mapped });
+    return this.axiosInstance.put<T>(mapped, body, config!);
   }
 
   async put<T>(
@@ -169,17 +227,21 @@ export class BaseRestClient {
       },
     });
     axiosInstance.interceptors.request.use(
-      async (config) => {
-        // Get token and add to headers if it exists
+      async (req) => {
         const token = await authProvider.getToken();
         if (token) {
-          config.headers = config.headers || {};
-          config.headers.Authorization = `Bearer ${token}`;
+          req.headers = req.headers || {};
+          req.headers.Authorization = `Bearer ${token}`;
         } else {
           console.warn('No token found, request may not be authenticated.');
         }
-
-        return config;
+        if (!req.headers['X-Idempotency-Key']) {
+          req.headers['X-Idempotency-Key'] =
+            typeof crypto !== 'undefined' && 'randomUUID' in crypto
+              ? crypto.randomUUID()
+              : `cmd-${Date.now()}`;
+        }
+        return req;
       },
       (error) => {
         console.error('Error in request interceptor:', error);

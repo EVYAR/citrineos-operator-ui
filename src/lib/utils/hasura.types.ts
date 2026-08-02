@@ -13,9 +13,9 @@ export enum HasuraClaimType {
   X_HASURA_ALLOWED_ROLES = 'x-hasura-allowed-roles',
 }
 
+/** Legacy role header names kept for authProvider compatibility; not sent to CSMS. */
 export enum HasuraHeader {
   X_AUTH_TOKEN = 'x-auth-token',
   X_HASURA_ROLE = 'x-hasura-role',
   X_HASURA_TENANT_ID = 'x-hasura-tenant-id',
-  X_HASURA_ADMIN_SECRET = 'x-hasura-admin-secret',
 }
