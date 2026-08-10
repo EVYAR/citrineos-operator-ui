@@ -6,7 +6,7 @@ import { gql } from 'graphql-tag';
 
 export const CONNECTOR_LIST_FOR_STATION_QUERY = gql`
   query GetPaginatedConnectorListForStation(
-    $stationId: String!
+    $stationId: Int!
     $offset: Int!
     $limit: Int!
     $order_by: [Connectors_order_by!]
@@ -23,7 +23,7 @@ export const CONNECTOR_LIST_FOR_STATION_QUERY = gql`
       errorCode
       id
       info
-      stationId
+      ocppConnectionName
       status
       timestamp
       updatedAt
@@ -39,14 +39,14 @@ export const CONNECTOR_LIST_FOR_STATION_QUERY = gql`
 `;
 
 export const CONNECTORS_FOR_STATION_QUERY = gql`
-  query GetConnectorListForStation($stationId: String!) {
+  query GetConnectorListForStation($stationId: Int!) {
     Connectors(where: { stationId: { _eq: $stationId } }) {
       connectorId
       createdAt
       errorCode
       id
       info
-      stationId
+      ocppConnectionName
       status
       timestamp
       updatedAt
@@ -58,7 +58,7 @@ export const CONNECTORS_FOR_STATION_QUERY = gql`
 
 export const GET_CONNECTOR_LIST_FOR_STATION_EVSE = gql`
   query GetConnectorListForStationEvse(
-    $stationId: String!
+    $stationId: Int!
     $where: Connectors_bool_exp = {}
     $order_by: [Connectors_order_by!] = {}
     $offset: Int
@@ -71,7 +71,7 @@ export const GET_CONNECTOR_LIST_FOR_STATION_EVSE = gql`
       limit: $limit
     ) {
       id
-      stationId
+      ocppConnectionName
       evseId
       connectorId
       evseTypeConnectorId
@@ -83,6 +83,7 @@ export const GET_CONNECTOR_LIST_FOR_STATION_EVSE = gql`
       maximumVoltage
       maximumPowerWatts
       termsAndConditionsUrl
+      tariffId
       createdAt
       updatedAt
     }
@@ -100,7 +101,7 @@ export const CONNECTOR_CREATE_MUTATION = gql`
   mutation ConnectorCreate($object: Connectors_insert_input!) {
     insert_Connectors_one(object: $object) {
       id
-      stationId
+      ocppConnectionName
       evseId
       evseTypeConnectorId
       connectorId
@@ -112,6 +113,7 @@ export const CONNECTOR_CREATE_MUTATION = gql`
       format
       powerType
       termsAndConditionsUrl
+      tariffId
       errorCode
       timestamp
       info
@@ -127,7 +129,7 @@ export const CONNECTOR_EDIT_MUTATION = gql`
   mutation ConnectorEdit($id: Int!, $object: Connectors_set_input!) {
     update_Connectors_by_pk(pk_columns: { id: $id }, _set: $object) {
       id
-      stationId
+      ocppConnectionName
       evseId
       evseTypeConnectorId
       connectorId
@@ -139,6 +141,7 @@ export const CONNECTOR_EDIT_MUTATION = gql`
       format
       powerType
       termsAndConditionsUrl
+      tariffId
       errorCode
       timestamp
       info

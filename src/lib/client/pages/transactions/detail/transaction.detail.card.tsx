@@ -47,6 +47,8 @@ export const TransactionDetailCard = ({
     );
   }, [dispatch, transaction, translate]);
 
+  console.log(transaction);
+
   return (
     <Card>
       <CardHeader>
@@ -112,9 +114,9 @@ export const TransactionDetailCard = ({
               <Link
                 to={`/${MenuSection.CHARGING_STATIONS}/${transaction.stationId}`}
                 className={clickableLinkStyle}
-                title={transaction.stationId}
+                title={transaction.ocppConnectionName}
               >
-                {transaction.stationId}
+                {transaction.ocppConnectionName}
               </Link>
             )}
           />
@@ -154,6 +156,23 @@ export const TransactionDetailCard = ({
             valueRender={(endTime) => (
               <TimestampDisplay isoTimestamp={endTime ?? ''} />
             )}
+          />
+          <KeyValueDisplay
+            keyLabel="Tariff"
+            value={''}
+            valueRender={() =>
+              transaction.connector?.tariff ? (
+                <Link
+                  to={`/${MenuSection.TARIFFS}/${transaction.connector!.tariff!.id}`}
+                  className={clickableLinkStyle}
+                  title={`#${transaction.connector.tariff.id} - ${transaction.connector.tariff.currency} ${transaction.connector.tariff.pricePerKwh}/kWh`}
+                >
+                  {`#${transaction.connector.tariff.id} - ${transaction.connector.tariff.currency} ${transaction.connector.tariff.pricePerKwh}/kWh`}
+                </Link>
+              ) : (
+                <span>{NOT_APPLICABLE}</span>
+              )
+            }
           />
         </div>
       </CardContent>

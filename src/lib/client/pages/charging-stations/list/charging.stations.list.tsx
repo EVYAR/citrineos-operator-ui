@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use client';
 
-import type { ChargingStationDto } from '@citrineos/base';
+import { type ChargingStationDto, ChargingStationProps } from '@citrineos/base';
 import { MenuSection } from '@lib/client/components/main-menu/main.menu';
 import { Table } from '@lib/client/components/table';
 import { Button } from '@lib/client/components/ui/button';
@@ -30,20 +30,26 @@ import {
 import { buttonIconSize } from '@lib/client/styles/icon';
 import { DebounceSearch } from '@lib/client/components/debounce-search';
 import { useColumnPreferences } from '@lib/client/hooks/useColumnPreferences';
+import { useTableFilters } from '@lib/client/hooks/useTableFilters';
 
 export const ChargingStationsList = () => {
   const { push } = useRouter();
   const translate = useTranslate();
 
-  const [filters, setFilters] = useState<any>(EMPTY_FILTER);
+  const [searchFilters, setSearchFilters] = useState<any>(EMPTY_FILTER);
 
   const { renderedVisibleColumns, columnSelector } = useColumnPreferences(
     getChargingStationsColumns(),
     ResourceType.CHARGING_STATIONS,
   );
 
+  const { filterButton, filterChips, activeCrudFilters } = useTableFilters(
+    getChargingStationsColumns(),
+    ResourceType.CHARGING_STATIONS,
+  );
+
   const onSearch = (value: string) => {
-    setFilters(value ? getChargingStationsFilters(value) : EMPTY_FILTER);
+    setSearchFilters(value ? getChargingStationsFilters(value) : EMPTY_FILTER);
   };
 
   return (
@@ -71,6 +77,7 @@ export const ChargingStationsList = () => {
             action={ActionType.LIST}
           >
             {columnSelector}
+            {filterButton}
             <DebounceSearch
               onSearch={onSearch}
               placeholder={`${translate('placeholders.search')} ${translate('ChargingStations.ChargingStations')}`}
@@ -78,6 +85,7 @@ export const ChargingStationsList = () => {
           </CanAccess>
         </div>
       </div>
+      {filterChips}
       <CanAccess
         resource={ResourceType.CHARGING_STATIONS}
         action={ActionType.LIST}
@@ -88,7 +96,7 @@ export const ChargingStationsList = () => {
             resource: ResourceType.CHARGING_STATIONS,
             sorters: DEFAULT_SORTERS,
             filters: {
-              permanent: filters,
+              permanent: [...activeCrudFilters, ...searchFilters],
             },
             meta: {
               gqlQuery: CHARGING_STATIONS_LIST_QUERY,
@@ -103,6 +111,7 @@ export const ChargingStationsList = () => {
           enableSorting
           enableFilters
           showHeader
+          tableStateKey={ResourceType.CHARGING_STATIONS}
         >
           {renderedVisibleColumns}
         </Table>

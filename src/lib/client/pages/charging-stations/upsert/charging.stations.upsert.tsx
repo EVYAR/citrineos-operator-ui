@@ -17,11 +17,14 @@ import {
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@lib/client/components/form';
 import {
+  CheckboxFormField,
   ComboboxFormField,
   FormField,
   formLabelStyle,
   MultiSelectFormField,
 } from '@lib/client/components/form/field';
+import { Checkbox } from '@lib/client/components/ui/checkbox';
+import { Label } from '@lib/client/components/ui/label';
 import { MenuSection } from '@lib/client/components/main-menu/main.menu';
 import { Input } from '@lib/client/components/ui/input';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
@@ -33,7 +36,6 @@ import {
 import { LOCATIONS_LIST_QUERY } from '@lib/queries/locations';
 import { ActionType, ResourceType } from '@lib/utils/access.types';
 import { AccessDeniedFallback } from '@lib/utils/AccessDeniedFallback';
-import config from '@lib/utils/config';
 import { getSerializedValues } from '@lib/utils/middleware';
 import {
   CanAccess,
@@ -55,15 +57,16 @@ import { Field, FieldLabel } from '@lib/client/components/ui/field';
 import { Button } from '@lib/client/components/ui/button';
 import { buttonIconSize } from '@lib/client/styles/icon';
 import { uploadFileViaPresignedUrl } from '@lib/server/actions/file/uploadFileViaPresignedUrl';
-import { Checkbox } from '@lib/client/components/ui/checkbox';
-import { Label } from '@lib/client/components/ui/label';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 type ChargingStationUpsertProps = {
-  params?: { id?: string };
+  params?: { id?: number };
+  allowImageUpload?: boolean;
 };
 
 const ChargingStationCreateSchema = ChargingStationSchema.pick({
   [ChargingStationProps.id]: true,
+  [ChargingStationProps.ocppConnectionName]: true,
   [ChargingStationProps.locationId]: true,
   [ChargingStationProps.floorLevel]: true,
   [ChargingStationProps.parkingRestrictions]: true,
@@ -72,8 +75,8 @@ const ChargingStationCreateSchema = ChargingStationSchema.pick({
 });
 
 const defaultChargingStation = {
-  [ChargingStationProps.id]: '',
-  [ChargingStationProps.isOnline]: false,
+  [ChargingStationProps.id]: undefined,
+  [ChargingStationProps.ocppConnectionName]: '',
   [ChargingStationProps.locationId]: undefined,
   [ChargingStationProps.floorLevel]: '',
   [ChargingStationProps.parkingRestrictions]: [],
@@ -96,10 +99,13 @@ export type ChargingStationCreateDto = z.infer<
 
 export const ChargingStationUpsert = ({
   params,
+  allowImageUpload = false,
 }: ChargingStationUpsertProps) => {
-  const { id: stationId } = params || {};
+  const { id } = params || {};
   const searchParams = useSearchParams();
   const locationId = searchParams?.get('locationId');
+
+  const tenantId = useTenantId();
 
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const [uploadedFileName, setUploadedFileName] = useState<string | null>(null);
@@ -114,13 +120,13 @@ export const ChargingStationUpsert = ({
   const form = useForm({
     refineCoreProps: {
       resource: ResourceType.CHARGING_STATIONS,
-      id: stationId ? Number(stationId) : undefined,
+      id,
       redirect: false,
       mutationMode: 'pessimistic',
-      action: stationId ? 'edit' : 'create',
+      action: id ? 'edit' : 'create',
       meta: {
         gqlQuery: CHARGING_STATIONS_GET_QUERY,
-        gqlMutation: stationId
+        gqlMutation: id
           ? CHARGING_STATIONS_EDIT_MUTATION
           : CHARGING_STATIONS_CREATE_MUTATION,
       },
@@ -184,7 +190,7 @@ export const ChargingStationUpsert = ({
   // Initialize coordinates from station data when editing
   useEffect(() => {
     const station = form.refineCore.query?.data?.data;
-    if (station && stationId) {
+    if (station && id) {
       const coords = (station as any).coordinates;
       if (coords) {
         setLatitude(coords.coordinates[1]);
@@ -194,7 +200,7 @@ export const ChargingStationUpsert = ({
         setUseLocationCoordinates(true);
       }
     }
-  }, [form.refineCore.query?.data?.data, stationId]);
+  }, [form.refineCore.query?.data?.data, id]);
 
   // Update coordinates when location changes and useLocationCoordinates is true
   useEffect(() => {
@@ -230,31 +236,38 @@ export const ChargingStationUpsert = ({
       };
     }
 
-    if (!stationId) {
-      newItem.tenantId = config.tenantId;
+    if (!id) {
+      newItem.tenantId = tenantId;
       newItem.createdAt = now;
     }
     newItem.updatedAt = now;
 
     form.refineCore.onFinish(newItem).then((result) => {
       if (result) {
-        const finalStationId = stationId || (result as any).data?.id;
+        const finalStationId = id || (result as any).data?.id;
 
         // Upload image to S3
         if (uploadedFile && finalStationId) {
           const renamedFileName = `${S3_BUCKET_FOLDER_IMAGES_CHARGING_STATIONS}/${finalStationId}`;
-          uploadFileViaPresignedUrl(uploadedFile, renamedFileName).catch(
-            (err: any) => {
+          uploadFileViaPresignedUrl(uploadedFile, renamedFileName)
+            .then((result) => {
+              if (!result.success) {
+                open?.({
+                  type: 'error',
+                  message: translate('imageUploadFailed'),
+                });
+              }
+            })
+            .catch((err: any) => {
               console.error(err);
               open?.({
                 type: 'error',
                 message: translate('imageUploadFailed'),
               });
-            },
-          );
+            });
         }
         replace(`/${MenuSection.CHARGING_STATIONS}/${finalStationId}`);
-      } else if (stationId) {
+      } else if (id) {
         back();
       }
     });
@@ -265,14 +278,14 @@ export const ChargingStationUpsert = ({
       resource={ResourceType.CHARGING_STATIONS}
       action={ActionType.EDIT}
       fallback={<AccessDeniedFallback />}
-      params={{ id: stationId }}
+      params={{ id }}
     >
       <Card className={pageMargin}>
         <CardHeader>
           <div className={cardHeaderFlex}>
             <ChevronLeft onClick={() => back()} className="cursor-pointer" />
             <h2 className={heading2Style}>
-              {translate(`actions.${stationId ? 'edit' : 'create'}`)}{' '}
+              {translate(`actions.${id ? 'edit' : 'create'}`)}{' '}
               {translate('ChargingStations.chargingStation')}
             </h2>
           </div>
@@ -282,8 +295,8 @@ export const ChargingStationUpsert = ({
             <div className={cardGridStyle}>
               <FormField
                 control={form.control}
-                label="ID"
-                name={ChargingStationProps.id}
+                label="Name"
+                name={ChargingStationProps.ocppConnectionName}
                 required
               >
                 <Input />
@@ -331,27 +344,11 @@ export const ChargingStationUpsert = ({
                 searchPlaceholder="Search Capabilities"
               />
 
-              <Field>
-                <div className="flex items-center gap-2">
-                  <Checkbox
-                    id="use16StatusNotification0"
-                    checked={
-                      form.watch(
-                        ChargingStationProps.use16StatusNotification0,
-                      ) ?? true
-                    }
-                    onCheckedChange={(checked) => {
-                      form.setValue(
-                        ChargingStationProps.use16StatusNotification0,
-                        checked === true,
-                      );
-                    }}
-                  />
-                  <Label htmlFor="use16StatusNotification0">
-                    {translate('ChargingStations.use16StatusNotification0')}
-                  </Label>
-                </div>
-              </Field>
+              <CheckboxFormField
+                control={form.control}
+                name={ChargingStationProps.use16StatusNotification0}
+                label={translate('ChargingStations.use16StatusNotification0')}
+              />
 
               {/* Coordinates Section */}
               <Field>
@@ -422,39 +419,41 @@ export const ChargingStationUpsert = ({
                 />
               </Field>
 
-              <Field>
-                <FieldLabel>
-                  <span className={formLabelStyle}>Image</span>
-                </FieldLabel>
-                <Input
-                  type="file"
-                  accept="image/*"
-                  id="uploadInput"
-                  style={{ display: 'none' }}
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
+              {allowImageUpload && (
+                <Field>
+                  <FieldLabel>
+                    <span className={formLabelStyle}>Image</span>
+                  </FieldLabel>
+                  <Input
+                    type="file"
+                    accept="image/*"
+                    id="uploadInput"
+                    style={{ display: 'none' }}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
 
-                    setUploadedFile(file);
-                    setUploadedFileName(file.name);
-                  }}
-                />
-                <Button
-                  type="button"
-                  variant="secondary"
-                  onClick={() =>
-                    document.getElementById('uploadInput')?.click()
-                  }
-                >
-                  <UploadIcon className={buttonIconSize} />
-                  {translate('buttons.upload')}
-                </Button>
-                {uploadedFileName && (
-                  <span className="text-sm text-gray-700">
-                    {uploadedFileName}
-                  </span>
-                )}
-              </Field>
+                      setUploadedFile(file);
+                      setUploadedFileName(file.name);
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    onClick={() =>
+                      document.getElementById('uploadInput')?.click()
+                    }
+                  >
+                    <UploadIcon className={buttonIconSize} />
+                    {translate('buttons.upload')}
+                  </Button>
+                  {uploadedFileName && (
+                    <span className="text-sm text-gray-700">
+                      {uploadedFileName}
+                    </span>
+                  )}
+                </Field>
+              )}
             </div>
           </Form>
         </CardContent>

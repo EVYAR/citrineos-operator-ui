@@ -17,9 +17,10 @@ const requestMiddleware = async (request: any) => {
   const requestHeaders = {
     ...request.headers,
   };
-  requestHeaders[HasuraHeader.X_HASURA_TENANT_ID] = config.tenantId;
 
-  const hasuraAdminSecret = await getHasuraAdminSecretAction();
+  const hasuraAdminSecret = await getHasuraAdminSecretAction().then((result) =>
+    result.success ? result.data : '',
+  );
 
   if (hasuraAdminSecret) {
     console.debug('Authorizing to Hasura via Hasura Admin Secret');
@@ -51,10 +52,7 @@ const client = new GraphQLClient(API_URL, {
 });
 
 const hasuraProviderOptions = {
-  idType: (resource: string) => {
-    if (resource === ResourceType.CHARGING_STATIONS) return 'String';
-    return 'Int';
-  },
+  idType: 'Int',
   namingConvention: 'hasura-default',
 };
 

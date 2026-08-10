@@ -30,12 +30,12 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 interface EVSESListProps {
-  stationId: string;
+  id: number;
 }
 
 export const evsesFormUpsertGrid = 'grid grid-cols-2 xs:grid-cols-1 gap-6';
 
-export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
+export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
   const dispatch = useDispatch();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'evse' | 'connector' | null>(null);
@@ -48,14 +48,17 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
     query: { data, isLoading, refetch },
   } = useOne<ChargingStationDto>({
     resource: ResourceType.CHARGING_STATIONS,
-    id: Number(stationId),
+    id,
     meta: {
       gqlQuery: CHARGING_STATIONS_GET_QUERY,
     },
     queryOptions: getPlainToInstanceOptions(ChargingStationClass, true),
   });
 
-  const station = data?.data;
+  const station = React.useMemo(() => {
+    const station = { ...data?.data } as ChargingStationDto;
+    return station;
+  }, [data?.data]);
 
   const openModal = useCallback(
     (
@@ -86,7 +89,7 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
   useEffect(() => {
     dispatch(
       setSelectedChargingStation({
-        selectedChargingStation: JSON.stringify(station),
+        selectedChargingStation: station,
       }),
     );
   }, [dispatch, station]);
@@ -134,12 +137,13 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
   );
 
   const renderModalContent = () => {
-    if (modalType === 'evse') {
+    if (modalType === 'evse' && station.id) {
       const currentEvse = getCurrentEvse(selectedItem);
       return (
         <EvseUpsert
           onSubmit={handleFormSubmit}
-          stationId={stationId}
+          stationId={station.id}
+          ocppConnectionName={station.ocppConnectionName}
           evse={currentEvse}
         />
       );

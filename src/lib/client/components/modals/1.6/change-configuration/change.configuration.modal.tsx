@@ -18,6 +18,7 @@ import { plainToInstance } from 'class-transformer';
 import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export const ChangeConfigurationSchema = z.object({
   key: z.string().min(1, 'Key is required'),
@@ -42,6 +43,8 @@ export const ChangeConfigurationModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -56,7 +59,7 @@ export const ChangeConfigurationModal = ({
   });
 
   const handleSubmit = (values: ChangeConfigurationFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Change Configuration request because station ID is missing.',
       );
@@ -69,7 +72,7 @@ export const ChangeConfigurationModal = ({
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/configuration/changeConfiguration?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/configuration/changeConfiguration?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
       ocppVersion: OCPPVersion.OCPP1_6,

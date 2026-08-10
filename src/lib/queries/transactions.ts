@@ -21,7 +21,7 @@ export const TRANSACTION_LIST_QUERY = gql`
       timeSpentCharging
       isActive
       chargingState
-      stationId
+      ocppConnectionName
       stoppedReason
       transactionId
       evseId
@@ -73,6 +73,7 @@ export const TRANSACTION_LIST_QUERY = gql`
       }
       chargingStation: ChargingStation {
         id
+        ocppConnectionName
         isOnline
         protocol
         locationId
@@ -118,7 +119,7 @@ export const GET_TRANSACTIONS_FOR_AUTHORIZATION = gql`
       timeSpentCharging
       isActive
       chargingState
-      stationId
+      ocppConnectionName
       stoppedReason
       transactionId
       evseId
@@ -130,6 +131,7 @@ export const GET_TRANSACTIONS_FOR_AUTHORIZATION = gql`
       updatedAt
       chargingStation: ChargingStation {
         id
+        ocppConnectionName
         isOnline
         protocol
         locationId
@@ -169,7 +171,7 @@ export const GET_TRANSACTIONS_FOR_AUTHORIZATION = gql`
 
 export const GET_TRANSACTION_LIST_FOR_STATION = gql`
   query GetTransactionListForStation(
-    $stationId: String!
+    $stationId: Int!
     $where: [Transactions_bool_exp!] = []
     $order_by: [Transactions_order_by!] = {}
     $offset: Int
@@ -185,6 +187,7 @@ export const GET_TRANSACTION_LIST_FOR_STATION = gql`
       timeSpentCharging
       isActive
       chargingState
+      ocppConnectionName
       stationId
       stoppedReason
       transactionId
@@ -261,6 +264,8 @@ export const TRANSACTION_GET_QUERY = gql`
       isActive
       chargingState
       stationId
+      locationId
+      ocppConnectionName
       stoppedReason
       transactionId
       evseId
@@ -295,6 +300,11 @@ export const TRANSACTION_GET_QUERY = gql`
         type
         createdAt
         updatedAt
+        tariff: Tariff {
+          id
+          currency
+          pricePerKwh
+        }
       }
       authorization: Authorization {
         id

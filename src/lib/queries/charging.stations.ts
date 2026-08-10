@@ -18,6 +18,7 @@ export const CHARGING_STATIONS_LIST_QUERY = gql`
       where: $where
     ) {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -50,6 +51,7 @@ export const CHARGING_STATIONS_LIST_QUERY = gql`
       LatestStatusNotifications {
         id
         stationId
+        ocppConnectionName
         statusNotificationId
         updatedAt
         createdAt
@@ -59,6 +61,7 @@ export const CHARGING_STATIONS_LIST_QUERY = gql`
           createdAt
           evseId
           stationId
+          ocppConnectionName
           id
           timestamp
           updatedAt
@@ -70,6 +73,7 @@ export const CHARGING_STATIONS_LIST_QUERY = gql`
         isActive
         chargingState
         stationId
+        ocppConnectionName
         stoppedReason
         transactionId
         evseId
@@ -121,6 +125,7 @@ export const FAULTED_CHARGING_STATIONS_LIST_QUERY = gql`
       }
     ) {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -140,7 +145,7 @@ export const FAULTED_CHARGING_STATIONS_LIST_QUERY = gql`
       }
       LatestStatusNotifications {
         id
-        stationId
+        ocppConnectionName
         statusNotificationId
         updatedAt
         createdAt
@@ -149,7 +154,7 @@ export const FAULTED_CHARGING_STATIONS_LIST_QUERY = gql`
           connectorStatus
           createdAt
           evseId
-          stationId
+          ocppConnectionName
           id
           timestamp
           updatedAt
@@ -197,8 +202,9 @@ export const CHARGING_STATIONS_STATUS_COUNT_QUERY = gql`
 export const CHARGING_STATIONS_GET_QUERY = gql`
   query GetChargingStationById($id: Int!) {
     ChargingStations_by_pk(id: $id) {
-      tenantId
       id
+      tenantId
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -226,6 +232,8 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
       }
       evses: Evses {
         id
+        ocppConnectionName
+        stationId
         evseTypeId
         evseId
         physicalReference
@@ -234,7 +242,7 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
         updatedAt
         connectors: Connectors {
           id
-          stationId
+          ocppConnectionName
           evseId
           evseTypeConnectorId
           connectorId
@@ -246,6 +254,7 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
           format
           powerType
           termsAndConditionsUrl
+          tariffId
           errorCode
           timestamp
           info
@@ -257,6 +266,7 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
       }
       LatestStatusNotifications {
         id
+        ocppConnectionName
         stationId
         statusNotificationId
         updatedAt
@@ -266,18 +276,21 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
           connectorStatus
           createdAt
           evseId
-          stationId
+          ocppConnectionName
           id
+          stationId
           timestamp
           updatedAt
         }
       }
       transactions: Transactions(where: { isActive: { _eq: true } }) {
         id
+        stationId
+        ocppConnectionName
         timeSpentCharging
         isActive
         chargingState
-        stationId
+        ocppConnectionName
         stoppedReason
         transactionId
         evseId
@@ -288,6 +301,7 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
       }
       connectors: Connectors {
         id
+        ocppConnectionName
         stationId
         evseId
         connectorId
@@ -299,6 +313,7 @@ export const CHARGING_STATIONS_GET_QUERY = gql`
         format
         powerType
         termsAndConditionsUrl
+        tariffId
         errorCode
         timestamp
         info
@@ -315,6 +330,7 @@ export const GET_CHARGING_STATIONS_WITH_LOCATION_AND_LATEST_STATUS_NOTIFICATIONS
   query GetChargingStationsWithLocationAndLatestStatusNotificationsAndTransactions {
     ChargingStations {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -323,7 +339,7 @@ export const GET_CHARGING_STATIONS_WITH_LOCATION_AND_LATEST_STATUS_NOTIFICATIONS
       latestStatusNotifications: LatestStatusNotifications {
         statusNotification: StatusNotification {
           id
-          stationId
+          ocppConnectionName
           evseId
           connectorId
           timestamp
@@ -337,7 +353,7 @@ export const GET_CHARGING_STATIONS_WITH_LOCATION_AND_LATEST_STATUS_NOTIFICATIONS
         timeSpentCharging
         isActive
         chargingState
-        stationId
+        ocppConnectionName
         stoppedReason
         transactionId
         evseId
@@ -372,6 +388,7 @@ export const CHARGING_STATION_ONLINE_STATUS_QUERY = gql`
   query ChargingStationOnlineStatus($id: Int!) {
     ChargingStations_by_pk(id: $id) {
       id
+      ocppConnectionName
       isOnline
       protocol
     }
@@ -382,6 +399,7 @@ export const CHARGING_STATIONS_CREATE_MUTATION = gql`
   mutation ChargingStationsCreate($object: ChargingStations_insert_input!) {
     insert_ChargingStations_one(object: $object) {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -401,6 +419,7 @@ export const CHARGING_STATIONS_EDIT_MUTATION = gql`
   ) {
     update_ChargingStations_by_pk(pk_columns: { id: $id }, _set: $object) {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId
@@ -414,6 +433,7 @@ export const CHARGING_STATIONS_DELETE_MUTATION = gql`
   mutation ChargingStationsDelete($id: Int!) {
     delete_ChargingStations_by_pk(id: $id) {
       id
+      ocppConnectionName
       isOnline
       protocol
       locationId

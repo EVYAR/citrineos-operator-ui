@@ -20,6 +20,7 @@ import { useDispatch } from 'react-redux';
 import { z } from 'zod';
 import { Controller } from 'react-hook-form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface ChangeAvailabilityModalProps {
   station: ChargingStationDto;
@@ -44,6 +45,8 @@ export const ChangeAvailabilityModal = ({
 }: ChangeAvailabilityModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState<boolean>(false);
+
+  const tenantId = useTenantId();
 
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
@@ -76,9 +79,10 @@ export const ChangeAvailabilityModal = ({
     }
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/configuration/changeAvailability?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/configuration/changeAvailability?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());

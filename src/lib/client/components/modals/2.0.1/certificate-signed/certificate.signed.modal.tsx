@@ -21,6 +21,7 @@ import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { Form } from '@lib/client/components/form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface CertificateSignedModalProps {
   station: any;
@@ -61,6 +62,8 @@ export const CertificateSignedModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -77,7 +80,7 @@ export const CertificateSignedModal = ({
   const fileRef = form.register('certificate');
 
   const onFinish = (values: CertificateSignedFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Certificate Signed request because station ID is missing.',
       );
@@ -93,9 +96,10 @@ export const CertificateSignedModal = ({
         };
 
         triggerMessageAndHandleResponse<MessageConfirmation[]>({
-          url: `/certificates/certificateSigned?identifier=${parsedStation.id}&tenantId=1`,
+          url: `/certificates/certificateSigned?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
           data,
           setLoading,
+          ocppVersion: parsedStation.protocol,
         }).then(() => {
           form.reset({
             certificateType: undefined,

@@ -4,7 +4,6 @@
 'use client';
 
 import type { ChargingStationDto } from '@citrineos/base';
-import { OCPPVersion } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@lib/client/components/form';
 import { FormField } from '@lib/client/components/form/field';
@@ -26,6 +25,7 @@ import { toast } from 'sonner';
 import z from 'zod';
 import { Textarea } from '@lib/client/components/ui/textarea';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface UpdateFirmwareModalProps {
   station: ChargingStationDto;
@@ -47,6 +47,8 @@ type UpdateFirmwareFormData = z.infer<typeof UpdateFirmwareSchema>;
 export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState<boolean>(false);
+
+  const tenantId = useTenantId();
 
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
@@ -91,7 +93,7 @@ export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
   }, [requestIdResponse, form]);
 
   const handleSubmit = (values: UpdateFirmwareFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Update Firmware request because station ID is missing.',
       );
@@ -126,10 +128,10 @@ export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/configuration/updateFirmware?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/configuration/updateFirmware?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());

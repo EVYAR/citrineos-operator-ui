@@ -51,11 +51,11 @@ export const LocationMap: React.FC<MapProps> = ({
 
   useEffect(() => {
     if (apiKey === undefined) {
-      getGoogleMapsApiKeyAction().then((key) =>
-        dispatch(setGoogleMapsApiKey(key)),
+      getGoogleMapsApiKeyAction().then((result) =>
+        dispatch(setGoogleMapsApiKey(result.success ? result.data : '')),
       );
     }
-  }, []);
+  }, [apiKey, dispatch]);
 
   // Create station markers from location data
   const stationMarkers: MapMarkerData[] = useMemo(() => {
@@ -71,7 +71,7 @@ export const LocationMap: React.FC<MapProps> = ({
 
           return {
             position,
-            identifier: station.id,
+            identifier: station.ocppConnectionName,
             type: 'station' as const,
             locationId: location.id!.toString(),
             status: station.isOnline ? 'online' : ('offline' as const),

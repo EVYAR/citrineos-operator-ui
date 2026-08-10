@@ -3,11 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use client';
 
-import {
-  type ChargingStationDto,
-  OCPP2_0_1,
-  OCPPVersion,
-} from '@citrineos/base';
+import { type ChargingStationDto, OCPP2_0_1 } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { FormField, SelectFormField } from '@lib/client/components/form/field';
 import { Input } from '@lib/client/components/ui/input';
@@ -16,7 +12,7 @@ import { CHARGING_STATION_SEQUENCES_GET_QUERY } from '@lib/queries/charging.stat
 import type { MessageConfirmation } from '@lib/utils/MessageConfirmation';
 import { triggerMessageAndHandleResponse } from '@lib/utils/messages.utils';
 import { closeModal } from '@lib/utils/store/modal.slice';
-import { useApiUrl, useCustom } from '@refinedev/core';
+import { useApiUrl, useCustom, useGetIdentity } from '@refinedev/core';
 import { useForm } from '@refinedev/react-hook-form';
 import { plainToInstance } from 'class-transformer';
 import { useEffect, useMemo, useState } from 'react';
@@ -24,6 +20,7 @@ import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { Form } from '@lib/client/components/form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface GetBaseReportModalProps {
   station: any;
@@ -46,6 +43,8 @@ const reportBaseTypes = Object.keys(OCPP2_0_1.ReportBaseEnumType);
 export const GetBaseReportModal = ({ station }: GetBaseReportModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+
+  const tenantId = useTenantId();
 
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
@@ -91,7 +90,7 @@ export const GetBaseReportModal = ({ station }: GetBaseReportModalProps) => {
   }, [requestIdResponse, form]);
 
   const onFinish = (values: GetBaseReportFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Get Base Report request because station ID is missing.',
       );
@@ -104,10 +103,10 @@ export const GetBaseReportModal = ({ station }: GetBaseReportModalProps) => {
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/reporting/getBaseReport?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/reporting/getBaseReport?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());
