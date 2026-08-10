@@ -114,6 +114,7 @@ export const ChargingStationUpsert = ({
   const form = useForm({
     refineCoreProps: {
       resource: ResourceType.CHARGING_STATIONS,
+      id: stationId ? Number(stationId) : undefined,
       redirect: false,
       mutationMode: 'pessimistic',
       action: stationId ? 'edit' : 'create',

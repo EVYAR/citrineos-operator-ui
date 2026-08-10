@@ -35,7 +35,7 @@ export const ToggleStationOnlineModal = ({
 
     mutate(
       {
-        id: stationId,
+        id: Number(stationId),
         resource: ResourceType.CHARGING_STATIONS,
         values: { isOnline: newStatus },
         meta: {

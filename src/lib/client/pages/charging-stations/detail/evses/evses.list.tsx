@@ -48,7 +48,7 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
     query: { data, isLoading, refetch },
   } = useOne<ChargingStationDto>({
     resource: ResourceType.CHARGING_STATIONS,
-    id: stationId,
+    id: Number(stationId),
     meta: {
       gqlQuery: CHARGING_STATIONS_GET_QUERY,
     },

@@ -88,7 +88,7 @@ export const ChargingStationDetailCard = ({
     query: { data, isLoading },
   } = useOne<ChargingStationDetailsDto>({
     resource: ResourceType.CHARGING_STATIONS,
-    id: stationId,
+    id: Number(stationId),
     meta: {
       gqlQuery: CHARGING_STATIONS_GET_QUERY,
     },
@@ -126,7 +126,7 @@ export const ChargingStationDetailCard = ({
 
     mutate(
       {
-        id: station.id.toString(),
+        id: station.id,
         resource: ResourceType.CHARGING_STATIONS,
         meta: {
           gqlMutation: CHARGING_STATIONS_DELETE_MUTATION,

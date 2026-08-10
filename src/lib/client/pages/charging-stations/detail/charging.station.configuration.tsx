@@ -198,7 +198,7 @@ export const ChargingStationConfiguration: React.FC<
     query: { data },
   } = useOne<ChargingStationClass>({
     resource: ResourceType.CHARGING_STATIONS,
-    id: stationId,
+    id: Number(stationId),
     meta: {
       gqlQuery: CHARGING_STATION_ONLINE_STATUS_QUERY,
     },
