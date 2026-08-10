@@ -35,13 +35,10 @@ export interface GenericAuthProviderConfig {
 /**
  * Default auth provider implementation
  */
-const ADMIN_EMAIL = config.adminEmail;
-const ADMIN_PASSWORD = config.adminPassword;
-
 export const genericAdminUser: User = {
   id: '1',
   name: 'Admin User',
-  email: ADMIN_EMAIL,
+  email: config.adminEmail,
   roles: ['admin'],
 };
 
@@ -207,7 +204,14 @@ export const createGenericAuthProvider = (
   // Return the auth provider implementation
   return {
     login: async ({ email, password }) => {
-      if (email !== ADMIN_EMAIL || password !== ADMIN_PASSWORD) {
+      const result = await signIn('generic', {
+        username: email,
+        password,
+        callbackUrl: '/overview',
+        redirect: false,
+      });
+
+      if (!result || result.error) {
         return {
           success: false,
           error: {
@@ -217,14 +221,12 @@ export const createGenericAuthProvider = (
         };
       }
 
-      await signIn('generic', { callbackUrl: '/overview' });
-
       const mockToken = 'mock_token_' + Math.random().toString(36).slice(2);
       saveToken(mockToken);
-      saveUser(genericAdminUser);
+      saveUser({ ...genericAdminUser, email });
 
       // Refresh the page to ensure all auth-dependent components re-render
-      window.location.href = '/overview';
+      window.location.href = result.url || '/overview';
       return {
         success: true,
         redirectTo: '/overview',
