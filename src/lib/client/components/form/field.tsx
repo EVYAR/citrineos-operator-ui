@@ -26,6 +26,7 @@ import {
   SelectValue,
 } from '@lib/client/components/ui/select';
 import { Checkbox } from '@lib/client/components/ui/checkbox';
+import { Input } from '@lib/client/components/ui/input';
 import { Combobox, type ComboboxProps } from '@lib/client/components/combobox';
 import {
   MultiSelect,
@@ -228,8 +229,60 @@ export const CheckboxFormField = <
   );
 };
 
+const toDateTimeLocalValue = (value?: string | null) => {
+  if (!value) return '';
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  const localDate = new Date(
+    date.getTime() - date.getTimezoneOffset() * 60_000,
+  );
+  return localDate.toISOString().slice(0, 16);
+};
+
+const toIsoDateTimeValue = (value: string) => {
+  if (!value) return undefined;
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? value : date.toISOString();
+};
+
+/**
+ * Keeps ISO 8601 values in form state while adapting them for a datetime-local
+ * input, whose browser value intentionally omits the time-zone offset.
+ */
+export const DateTimeLocalFormField = <
+  TFieldValues extends FieldValues = FieldValues,
+  TName extends FieldPath<TFieldValues> = FieldPath<TFieldValues>,
+>(
+  props: Props<TFieldValues, TName>,
+) => {
+  return (
+    <Controller
+      name={props.name}
+      control={props.control}
+      render={({ field, fieldState }) => (
+        <FieldWrapper {...{ ...props, field, fieldState }}>
+          <Input
+            id={field.name}
+            type="datetime-local"
+            value={toDateTimeLocalValue(field.value)}
+            onChange={(event) =>
+              field.onChange(toIsoDateTimeValue(event.target.value))
+            }
+            onBlur={field.onBlur}
+            ref={field.ref}
+          />
+        </FieldWrapper>
+      )}
+    />
+  );
+};
+
 FormField.displayName = 'FormField';
 SelectFormField.displayName = 'SelectFormField';
 ComboboxFormField.displayName = 'ComboboxFormField';
 MultiSelectFormField.displayName = 'MultiSelectFormField';
 CheckboxFormField.displayName = 'CheckboxFormField';
+DateTimeLocalFormField.displayName = 'DateTimeLocalFormField';

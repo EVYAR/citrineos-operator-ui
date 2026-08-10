@@ -15,6 +15,7 @@ import { Form } from '@lib/client/components/form';
 import {
   CheckboxFormField,
   ComboboxFormField,
+  DateTimeLocalFormField,
   FormField,
   nestedFormRowFlex,
 } from '@lib/client/components/form/field';
@@ -272,13 +273,11 @@ export const AuthorizationUpsert = ({ params }: AuthorizationUpsertProps) => {
                 required
               />
 
-              <FormField
+              <DateTimeLocalFormField
                 control={form.control}
                 label="Cache Expiry DateTime"
                 name={AuthorizationProps.cacheExpiryDateTime}
-              >
-                <Input type="datetime-local" />
-              </FormField>
+              />
 
               <FormField
                 control={form.control}
