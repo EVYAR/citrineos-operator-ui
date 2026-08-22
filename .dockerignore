@@ -5,6 +5,7 @@ npm-debug.log
 .coverage
 .coverage.*
 .env
+.env.local
 .next
 *.next
 
