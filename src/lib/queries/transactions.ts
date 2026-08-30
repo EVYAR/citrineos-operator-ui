@@ -271,6 +271,7 @@ export const TRANSACTION_GET_QUERY = gql`
       evseId
       remoteStartId
       authorizationId
+      tariffId
       totalKwh
       startTime
       endTime
@@ -305,6 +306,11 @@ export const TRANSACTION_GET_QUERY = gql`
           currency
           pricePerKwh
         }
+      }
+      tariff: Tariff {
+        id
+        currency
+        pricePerKwh
       }
       authorization: Authorization {
         id
