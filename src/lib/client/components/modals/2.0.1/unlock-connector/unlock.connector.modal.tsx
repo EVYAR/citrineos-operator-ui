@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use client';
 
-import { type ChargingStationDto, OCPPVersion } from '@citrineos/base';
+import { type ChargingStationDto } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { ConnectorSelector } from '@lib/client/components/modals/shared/connector-selector/connector.selector';
 import { EvseSelector } from '@lib/client/components/modals/shared/evse-selector/evse.selector';
@@ -19,6 +19,7 @@ import z from 'zod';
 import { Form } from '@lib/client/components/form';
 import { Controller } from 'react-hook-form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 interface UnlockConnectorModalProps {
   station: any;
@@ -41,6 +42,8 @@ export const UnlockConnectorModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -55,7 +58,7 @@ export const UnlockConnectorModal = ({
   });
 
   const onFinish = (values: UnlockConnectorFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Unlock Connector request because station ID is missing.',
       );
@@ -70,10 +73,10 @@ export const UnlockConnectorModal = ({
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/evdriver/unlockConnector?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/evdriver/unlockConnector?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());

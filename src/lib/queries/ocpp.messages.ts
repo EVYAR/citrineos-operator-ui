@@ -6,7 +6,7 @@ import { gql } from 'graphql-tag';
 
 export const GET_OCPP_MESSAGES_LIST_FOR_STATION = gql`
   query GetOCPPMessagesListForStation(
-    $stationId: String!
+    $stationId: Int
     $where: [OCPPMessages_bool_exp!] = []
     $order_by: [OCPPMessages_order_by!] = {}
     $offset: Int
@@ -19,7 +19,7 @@ export const GET_OCPP_MESSAGES_LIST_FOR_STATION = gql`
       limit: $limit
     ) {
       id
-      stationId
+      ocppConnectionName
       correlationId
       origin
       protocol

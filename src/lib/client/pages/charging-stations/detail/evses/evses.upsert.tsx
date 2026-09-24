@@ -8,10 +8,9 @@ import type { EvseDto } from '@citrineos/base';
 import { EvseProps } from '@citrineos/base';
 import { Form } from '@lib/client/components/form';
 import {
-  formCheckboxStyle,
+  CheckboxFormField,
   FormField,
 } from '@lib/client/components/form/field';
-import { Checkbox } from '@lib/client/components/ui/checkbox';
 import { Input } from '@lib/client/components/ui/input';
 import { EvseClass } from '@lib/cls/evse.dto';
 import { EVSE_CREATE_MUTATION, EVSE_EDIT_MUTATION } from '@lib/queries/evses';
@@ -19,18 +18,23 @@ import { ResourceType } from '@lib/utils/access.types';
 import { getSerializedValues } from '@lib/utils/middleware';
 import { useForm } from '@refinedev/react-hook-form';
 import { evsesFormUpsertGrid } from '@lib/client/pages/charging-stations/detail/evses/evses.list';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 interface EvseUpsertProps {
   onSubmit: () => void;
-  stationId: string;
+  stationId: number;
+  ocppConnectionName?: string;
   evse: EvseDto | null;
 }
 
 export const EvseUpsert: React.FC<EvseUpsertProps> = ({
   onSubmit,
   stationId,
+  ocppConnectionName,
   evse,
 }) => {
+  const tenantId = useTenantId();
+
   const form = useForm({
     refineCoreProps: {
       resource: ResourceType.EVSES,
@@ -63,8 +67,18 @@ export const EvseUpsert: React.FC<EvseUpsertProps> = ({
   };
 
   const handleOnFinish = (data: any) => {
+    const now = new Date().toISOString();
+
     const newItem = getSerializedValues(data, EvseClass);
+
+    if (!newItem.id) {
+      newItem.tenantId = tenantId;
+      newItem.createdAt = now;
+    }
+
+    newItem.updatedAt = now;
     newItem.stationId = stationId;
+    newItem.ocppConnectionName = ocppConnectionName ?? evse?.ocppConnectionName;
 
     form.refineCore.onFinish(newItem).then(() => reset());
   };
@@ -101,14 +115,12 @@ export const EvseUpsert: React.FC<EvseUpsertProps> = ({
           <Input />
         </FormField>
 
-        <FormField
+        <CheckboxFormField
           control={form.control}
           name={EvseProps.removed}
           label="Removed"
           description="Marked as REMOVED"
-        >
-          <Checkbox className={formCheckboxStyle} />
-        </FormField>
+        />
       </div>
     </Form>
   );

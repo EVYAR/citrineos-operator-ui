@@ -11,6 +11,7 @@ import {
   TabsTrigger,
 } from '@lib/client/components/ui/tabs';
 import { CanAccess, useTranslate } from '@refinedev/core';
+import { getPlainToInstanceOptions } from '@lib/utils/tables';
 import {
   ActionType,
   ChargingStationAccessType,
@@ -20,9 +21,8 @@ import { EVSESList } from '@lib/client/pages/charging-stations/detail/evses/evse
 import { OCPPMessages } from '@lib/client/pages/charging-stations/detail/ocpp.messages';
 import { AccessDeniedFallback } from '@lib/utils/AccessDeniedFallback';
 import { Table } from '@lib/client/components/table';
-import { DEFAULT_SORTERS } from '@lib/utils/consts';
+import { DEFAULT_SORTERS, DETAIL_TAB_STATE } from '@lib/utils/consts';
 import { GET_TRANSACTION_LIST_FOR_STATION } from '@lib/queries/transactions';
-import { getPlainToInstanceOptions } from '@lib/utils/tables';
 import { TransactionClass } from '@lib/cls/transaction.dto';
 import { AggregatedMeterValuesData } from '@lib/client/pages/charging-stations/detail/charging.station.aggregated.data';
 import React from 'react';
@@ -34,12 +34,17 @@ import {
 } from '@lib/client/pages/transactions/columns';
 import { cardTabsStyle } from '@lib/client/styles/card';
 import { useColumnPreferences } from '@lib/client/hooks/useColumnPreferences';
+import { useQueryState } from 'nuqs';
 
-export const ChargingStationDetailTabsCard = ({
-  stationId,
-}: {
-  stationId: string;
-}) => {
+enum ChargingStationDetailTabType {
+  evses = 'evses',
+  ocppMessages = 'ocppMessages',
+  configuration = 'configuration',
+  transactions = 'transactions',
+  aggregated = 'aggregated',
+}
+
+export const ChargingStationDetailTabsCard = ({ id }: { id: number }) => {
   const translate = useTranslate();
 
   const { renderedVisibleColumns } = useColumnPreferences(
@@ -51,28 +56,46 @@ export const ChargingStationDetailTabsCard = ({
     ResourceType.TRANSACTIONS,
   );
 
+  const [tab, setTab] = useQueryState(DETAIL_TAB_STATE);
+
   return (
     <Card>
       <CardContent>
-        <Tabs defaultValue="evses">
+        <Tabs
+          value={
+            tab && tab in ChargingStationDetailTabType
+              ? tab
+              : ChargingStationDetailTabType.evses
+          }
+          onValueChange={(selectedTab: string) => setTab(selectedTab)}
+        >
           <TabsList>
-            <TabsTrigger value="evses">EVSEs</TabsTrigger>
-            <TabsTrigger value="ocpp-logs">OCPP Logs</TabsTrigger>
-            <TabsTrigger value="configuration">Configuration</TabsTrigger>
-            <TabsTrigger value="transactions">
+            <TabsTrigger value={ChargingStationDetailTabType.evses}>
+              EVSEs
+            </TabsTrigger>
+            <TabsTrigger value={ChargingStationDetailTabType.ocppMessages}>
+              OCPP Messages
+            </TabsTrigger>
+            <TabsTrigger value={ChargingStationDetailTabType.configuration}>
+              Configuration
+            </TabsTrigger>
+            <TabsTrigger value={ChargingStationDetailTabType.transactions}>
               {translate('Transactions.Transactions')}
             </TabsTrigger>
-            <TabsTrigger value="aggregated">
+            <TabsTrigger value={ChargingStationDetailTabType.aggregated}>
               Aggregated Meter Values Data
             </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="evses" className={cardTabsStyle}>
+          <TabsContent
+            value={ChargingStationDetailTabType.evses}
+            className={cardTabsStyle}
+          >
             <CanAccess
               resource={ResourceType.CHARGING_STATIONS}
               action={ActionType.ACCESS}
               params={{
-                id: stationId,
+                id,
                 accessType: ChargingStationAccessType.TOPOLOGY,
               }}
               fallback={
@@ -81,16 +104,19 @@ export const ChargingStationDetailTabsCard = ({
                 </p>
               }
             >
-              <EVSESList stationId={stationId} />
+              <EVSESList id={id} />
             </CanAccess>
           </TabsContent>
 
-          <TabsContent value="ocpp-logs" className={cardTabsStyle}>
+          <TabsContent
+            value={ChargingStationDetailTabType.ocppMessages}
+            className={cardTabsStyle}
+          >
             <CanAccess
               resource={ResourceType.CHARGING_STATIONS}
               action={ActionType.ACCESS}
               params={{
-                id: stationId,
+                id,
                 accessType: ChargingStationAccessType.OCPP_MESSAGES,
               }}
               fallback={
@@ -99,16 +125,19 @@ export const ChargingStationDetailTabsCard = ({
                 </p>
               }
             >
-              <OCPPMessages stationId={stationId} />
+              <OCPPMessages id={id} />
             </CanAccess>
           </TabsContent>
 
-          <TabsContent value="configuration" className={cardTabsStyle}>
+          <TabsContent
+            value={ChargingStationDetailTabType.configuration}
+            className={cardTabsStyle}
+          >
             <CanAccess
               resource={ResourceType.CHARGING_STATIONS}
               action={ActionType.ACCESS}
               params={{
-                id: stationId,
+                id,
                 accessType: ChargingStationAccessType.CONFIGURATION,
               }}
               fallback={
@@ -117,11 +146,14 @@ export const ChargingStationDetailTabsCard = ({
                 </p>
               }
             >
-              <ChargingStationConfiguration stationId={stationId} />
+              <ChargingStationConfiguration id={id} />
             </CanAccess>
           </TabsContent>
 
-          <TabsContent value="transactions" className={cardTabsStyle}>
+          <TabsContent
+            value={ChargingStationDetailTabType.transactions}
+            className={cardTabsStyle}
+          >
             <CanAccess
               resource={ResourceType.TRANSACTIONS}
               action={ActionType.LIST}
@@ -133,21 +165,25 @@ export const ChargingStationDetailTabsCard = ({
                   sorters: DEFAULT_SORTERS,
                   meta: {
                     gqlQuery: GET_TRANSACTION_LIST_FOR_STATION,
-                    gqlVariables: { stationId },
+                    gqlVariables: { stationId: id },
                   },
                   queryOptions: getPlainToInstanceOptions(TransactionClass),
                 }}
                 enableSorting
                 enableFilters
                 showHeader
+                tableStateKey={ResourceType.TRANSACTIONS}
               >
                 {renderedVisibleColumns}
               </Table>
             </CanAccess>
           </TabsContent>
 
-          <TabsContent value="aggregated" className={cardTabsStyle}>
-            <AggregatedMeterValuesData stationId={stationId} />
+          <TabsContent
+            value={ChargingStationDetailTabType.aggregated}
+            className={cardTabsStyle}
+          >
+            <AggregatedMeterValuesData id={id} />
           </TabsContent>
         </Tabs>
       </CardContent>

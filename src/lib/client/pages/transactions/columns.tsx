@@ -8,6 +8,7 @@ import {
   AuthorizationProps,
   LocationProps,
   OCPP2_0_1,
+  type TransactionDto,
   TransactionProps,
 } from '@citrineos/base';
 import { MenuSection } from '@lib/client/components/main-menu/main.menu';
@@ -22,7 +23,7 @@ import type { ColumnConfiguration } from '@lib/utils/column.configuration';
 import { TransactionClass } from '@lib/cls/transaction.dto';
 import { EMPTY_VALUE } from '@lib/utils/consts';
 
-export const transactionStationIdField = 'stationId';
+export const transactionStationIdField = 'ocppConnectionName';
 export const transactionChargingStationLocationNameField =
   'ChargingStation.Location.name';
 export const transactionAuthorizationIdTokenField = 'authorization.idToken';
@@ -59,7 +60,7 @@ export const transactionsColumns: ColumnConfiguration[] = [
     cellRender: ({ row }: CellContext<TransactionClass, unknown>) => (
       <TableCellLink
         path={`/${MenuSection.CHARGING_STATIONS}/${row.original.chargingStation?.id}`}
-        value={row.original.chargingStation?.id ?? EMPTY_VALUE}
+        value={row.original.chargingStation?.ocppConnectionName ?? EMPTY_VALUE}
       />
     ),
   },
@@ -96,9 +97,12 @@ export const transactionsColumns: ColumnConfiguration[] = [
     header: 'Total kWh',
     visible: true,
     sortable: true,
-    cellRender: ({ row }: CellContext<TransactionClass, unknown>) => (
-      <span>{row.original.totalKwh?.toFixed(2)} kWh</span>
-    ),
+    cellRender: ({ row }: CellContext<TransactionClass, unknown>) =>
+      row.original.totalKwh ? (
+        <span>{row.original.totalKwh.toFixed(2)} kWh</span>
+      ) : (
+        <span>{EMPTY_VALUE}</span>
+      ),
   },
   {
     key: 'status',
@@ -140,6 +144,30 @@ export const transactionsColumns: ColumnConfiguration[] = [
         <span>{EMPTY_VALUE}</span>
       ),
   },
+  {
+    key: TransactionProps.createdAt,
+    header: 'Created At',
+    visible: true,
+    sortable: true,
+    cellRender: ({ row }: CellContext<TransactionDto, unknown>) =>
+      row.original.createdAt ? (
+        <TimestampDisplay isoTimestamp={row.original.createdAt} />
+      ) : (
+        <span>{EMPTY_VALUE}</span>
+      ),
+  },
+  {
+    key: TransactionProps.updatedAt,
+    header: 'Updated At',
+    visible: true,
+    sortable: true,
+    cellRender: ({ row }: CellContext<TransactionDto, unknown>) =>
+      row.original.updatedAt ? (
+        <TimestampDisplay isoTimestamp={row.original.updatedAt} />
+      ) : (
+        <span>{EMPTY_VALUE}</span>
+      ),
+  },
 ];
 
 export const getTransactionsFilters = (value: string): CrudFilters => {
@@ -158,7 +186,7 @@ export const getTransactionsFilters = (value: string): CrudFilters => {
           value,
         },
         {
-          field: TransactionProps.stationId,
+          field: TransactionProps.ocppConnectionName,
           operator: 'contains',
           value,
         },

@@ -48,7 +48,8 @@ export type ChargingStationStatusCountsDto = z.infer<
 >;
 
 export class ChargingStationClass implements Partial<ChargingStationDto> {
-  id!: string;
+  id!: number;
+  ocppConnectionName!: string;
   @IsBoolean()
   isOnline!: boolean;
   protocol?: any;

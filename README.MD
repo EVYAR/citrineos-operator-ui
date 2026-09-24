@@ -358,6 +358,43 @@ Online
 
 You can now track OCPP logs for the charging station.
 
+---
+
+### Running OCPP 1.6 and OCPP 2.0.1 at the Same Time
+
+If you want to run two simulators concurrently and see both in Operator UI, use this pattern:
+
+1. Use **different station IDs** (example: `cp001` for OCPP 1.6 and `cp002` for OCPP 2.0.1).
+2. Create **both stations** in Operator UI before starting the simulators.
+3. Add EVSE/Connector for each station (for example EVSE `1`, Connector `1`).
+4. Add at least one accepted authorization token (for example `DEADBEEF` with `ISO14443`).
+
+Recommended simulator config:
+
+- **OCPP 1.6 simulator**
+  - `OCPP_VERSION=one`
+  - `FLOWS=/config/config-sil-flow.json`
+  - local target: `ws://host.docker.internal:8092/cp001`
+  - dokploy target: `wss://ocpp16.rangoru.com/cp001`
+
+- **OCPP 2.0.1 simulator**
+  - `OCPP_VERSION=two`
+  - `FLOWS=/config/config-sil-two-evse-flow.json`
+  - local target: `ws://host.docker.internal:8081/cp002`
+  - dokploy target: `wss://ocpp.rangoru.com/cp002`
+
+Important notes:
+
+1. Operator UI does not have a manual protocol selector on station creation; protocol is inferred from connected traffic/messages.
+2. If both simulators use the same station ID (for example both `cp001`), data will overlap and appear as one station.
+3. For concurrent local Docker runs, avoid port conflicts on simulator UI/log ports (`1880`, `8888`) by remapping or disabling published ports for one stack.
+
+Troubleshooting for OCPP 1.6 on Dokploy:
+
+1. If logs show `Failed to get connection information for 1:cp001` / `Client is not alive`, verify the station path identity is included in URL (`.../cp001`) and that station `cp001` exists in Operator UI.
+2. If transaction does not start, create both EVSEs expected by this simulator profile (`1` and `2`) and create connectors for both EVSEs.
+3. If logs show noisy 1.6 `CALLERROR` messages for `SecurityEventNotification` or `DataTransfer`, set `EVEREST_DISABLE_ISO15118=true` for OCPP 1.6 simulations.
+
 ## Usage
 
 Once running, the Operator UI allows you to:

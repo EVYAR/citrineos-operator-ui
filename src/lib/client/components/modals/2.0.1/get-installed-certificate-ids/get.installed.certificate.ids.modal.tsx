@@ -4,11 +4,7 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import {
-  type ChargingStationDto,
-  OCPP2_0_1,
-  OCPPVersion,
-} from '@citrineos/base';
+import { type ChargingStationDto, OCPP2_0_1 } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { MultiSelectFormField } from '@lib/client/components/form/field';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
@@ -21,6 +17,7 @@ import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { Form } from '@lib/client/components/form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 interface GetInstalledCertificateIdsModalProps {
   station: any;
@@ -46,6 +43,8 @@ export const GetInstalledCertificateIdsModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -59,7 +58,7 @@ export const GetInstalledCertificateIdsModal = ({
   });
 
   const onFinish = async (values: GetInstalledCertificateIdsFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Get Installed Certificate IDs request because station ID is missing.',
       );
@@ -74,10 +73,10 @@ export const GetInstalledCertificateIdsModal = ({
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/certificates/getInstalledCertificateIds?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/certificates/getInstalledCertificateIds?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());

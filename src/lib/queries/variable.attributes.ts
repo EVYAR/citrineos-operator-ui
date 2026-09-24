@@ -18,7 +18,7 @@ export const VARIABLE_ATTRIBUTE_LIST_QUERY = gql`
       where: $where
     ) {
       id
-      stationId
+      ocppConnectionName
       type
       dataType
       value
@@ -55,13 +55,13 @@ export const VARIABLE_ATTRIBUTE_LIST_QUERY = gql`
 `;
 
 export const VARIABLE_ATTRIBUTE_DOWNLOAD_QUERY = gql`
-  query DownloadVariableAttributes($stationId: String!) {
+  query DownloadVariableAttributes($id: Int!) {
     VariableAttributes(
-      where: { stationId: { _eq: $stationId } }
+      where: { id: { _eq: $id } }
       order_by: { createdAt: desc }
     ) {
       id
-      stationId
+      ocppConnectionName
       type
       dataType
       value
@@ -89,7 +89,7 @@ export const VARIABLE_ATTRIBUTE_DOWNLOAD_QUERY = gql`
         updatedAt
       }
     }
-    VariableAttributes_aggregate(where: { stationId: { _eq: $stationId } }) {
+    VariableAttributes_aggregate(where: { id: { _eq: $id } }) {
       aggregate {
         count
       }

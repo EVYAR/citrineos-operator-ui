@@ -7,10 +7,9 @@ import { type ChargingStationDto } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@lib/client/components/form';
 import {
-  formCheckboxStyle,
+  CheckboxFormField,
   FormField,
 } from '@lib/client/components/form/field';
-import { Checkbox } from '@lib/client/components/ui/checkbox';
 import { Input } from '@lib/client/components/ui/input';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import type { MessageConfirmation } from '@lib/utils/MessageConfirmation';
@@ -54,7 +53,7 @@ export const UpdateAuthPasswordModal = ({
   });
 
   const handleSubmit = (values: UpdateAuthPasswordFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Update Auth Password request because station ID is missing.',
       );
@@ -64,7 +63,7 @@ export const UpdateAuthPasswordModal = ({
     const data = {
       password: values.password,
       setOnCharger: values.setOnCharger,
-      stationId: parsedStation.id,
+      ocppConnectionName: parsedStation.ocppConnectionName,
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation>({
@@ -96,14 +95,12 @@ export const UpdateAuthPasswordModal = ({
         <Input type="password" placeholder="Enter new password" />
       </FormField>
 
-      <FormField
+      <CheckboxFormField
         control={form.control}
         label="Set On Charger"
         name="setOnCharger"
         required
-      >
-        <Checkbox className={formCheckboxStyle} />
-      </FormField>
+      />
     </Form>
   );
 };

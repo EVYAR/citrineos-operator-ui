@@ -32,7 +32,7 @@ export const EVSE_LIST_QUERY = gql`
 
 export const GET_EVSE_LIST_FOR_STATION = gql`
   query GetPaginatedEvseListForStation(
-    $stationId: String!
+    $stationId: Int!
     $where: Evses_bool_exp = {}
     $order_by: [Evses_order_by!] = {}
     $offset: Int
@@ -45,7 +45,7 @@ export const GET_EVSE_LIST_FOR_STATION = gql`
       limit: $limit
     ) {
       id
-      stationId
+      ocppConnectionName
       evseTypeId
       evseId
       physicalReference
@@ -76,10 +76,10 @@ export const GET_EVSE_LIST_FOR_STATION = gql`
 `;
 
 export const GET_EVSES_FOR_STATION = gql`
-  query GetEvseListForStation($stationId: String!) {
+  query GetEvseListForStation($stationId: Int!) {
     Evses(where: { stationId: { _eq: $stationId } }) {
       id
-      stationId
+      ocppConnectionName
       evseTypeId
       evseId
       physicalReference
@@ -124,6 +124,20 @@ export const EVSE_EDIT_MUTATION = gql`
       evseId
       createdAt
       updatedAt
+    }
+  }
+`;
+
+export const EVSE_DELETE_CASCADE_MUTATION = gql`
+  mutation EvseDeleteCascade($id: Int!) {
+    delete_Transactions(where: { evseId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Connectors(where: { evseId: { _eq: $id } }) {
+      affected_rows
+    }
+    delete_Evses_by_pk(id: $id) {
+      id
     }
   }
 `;

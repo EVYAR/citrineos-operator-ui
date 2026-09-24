@@ -24,6 +24,7 @@ import { AddArrayItemButton } from '@lib/client/components/form/add-array-item-b
 import { RemoveArrayItemButton } from '@lib/client/components/form/remove-array-item-button';
 import { useFieldArray } from 'react-hook-form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface GetConfigurationModalProps {
   station: any;
@@ -47,6 +48,8 @@ export const GetConfigurationModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState<boolean>(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -65,7 +68,7 @@ export const GetConfigurationModal = ({
   });
 
   const handleSubmit = (values: GetConfigurationFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Get Configuration request because station ID is missing.',
       );
@@ -84,7 +87,7 @@ export const GetConfigurationModal = ({
     }
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/configuration/getConfiguration?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/configuration/getConfiguration?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
       ocppVersion: OCPPVersion.OCPP1_6,

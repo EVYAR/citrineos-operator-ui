@@ -4,17 +4,14 @@
 'use client';
 
 import React, { useMemo, useState } from 'react';
-import {
-  type ChargingStationDto,
-  OCPP2_0_1,
-  OCPPVersion,
-} from '@citrineos/base';
+import { type ChargingStationDto, OCPP2_0_1 } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Form } from '@lib/client/components/form';
 import {
+  CheckboxFormField,
   ComboboxFormField,
-  formCheckboxStyle,
   FormField,
+  formCheckboxStyle,
   formLabelStyle,
   formLabelWrapperStyle,
   SelectFormField,
@@ -35,6 +32,7 @@ import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { Field, FieldLabel } from '@lib/client/components/ui/field';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface SetNetworkProfileModalProps {
   station: any;
@@ -120,6 +118,8 @@ export const SetNetworkProfileModal = ({
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -164,7 +164,7 @@ export const SetNetworkProfileModal = ({
   });
 
   const onFinish = (values: SetNetworkProfileFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Set Network Profile request because station ID is missing.',
       );
@@ -194,7 +194,7 @@ export const SetNetworkProfileModal = ({
       connectionData,
     };
 
-    let url = `/configuration/setNetworkProfile?identifier=${parsedStation.id}&tenantId=1`;
+    let url = `/configuration/setNetworkProfile?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`;
     if (values.websocketServerConfigId) {
       url = `${url}&websocketServerConfigId=${values.websocketServerConfigId}`;
     }
@@ -203,7 +203,7 @@ export const SetNetworkProfileModal = ({
       url,
       data,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());
@@ -379,13 +379,11 @@ export const SetNetworkProfileModal = ({
               <Input />
             </FormField>
 
-            <FormField
+            <CheckboxFormField
               control={form.control}
               label="Use Only Preferred Network"
               name="connectionData.apn.useOnlyPreferredNetwork"
-            >
-              <Checkbox className={formCheckboxStyle} />
-            </FormField>
+            />
           </>
         )}
       </div>

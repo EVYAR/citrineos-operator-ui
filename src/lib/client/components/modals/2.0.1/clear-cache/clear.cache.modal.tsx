@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: Apache-2.0
 'use client';
 
-import { type ChargingStationDto, OCPPVersion } from '@citrineos/base';
+import { type ChargingStationDto } from '@citrineos/base';
 import { Button } from '@lib/client/components/ui/button';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import type { MessageConfirmation } from '@lib/utils/MessageConfirmation';
@@ -12,6 +12,7 @@ import { closeModal } from '@lib/utils/store/modal.slice';
 import { plainToInstance } from 'class-transformer';
 import { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface ClearCacheModalProps {
   station: any;
@@ -21,13 +22,15 @@ export const ClearCacheModal = ({ station }: ClearCacheModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
   ) as ChargingStationDto;
 
   const handleSubmit = async () => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Clear Cache request because station ID is missing.',
       );
@@ -35,10 +38,10 @@ export const ClearCacheModal = ({ station }: ClearCacheModalProps) => {
     }
 
     await triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/evdriver/clearCache?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/evdriver/clearCache?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data: {},
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     });
 
     dispatch(closeModal());

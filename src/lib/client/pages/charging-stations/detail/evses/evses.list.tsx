@@ -9,6 +9,7 @@ import type {
   EvseDto,
 } from '@citrineos/base';
 import { Button } from '@lib/client/components/ui/button';
+import { ConfirmDialog } from '@lib/client/components/ui/confirm';
 import {
   Dialog,
   DialogContent,
@@ -22,40 +23,59 @@ import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import type { ConnectorClass } from '@lib/cls/connector.dto';
 import type { EvseClass } from '@lib/cls/evse.dto';
 import { CHARGING_STATIONS_GET_QUERY } from '@lib/queries/charging.stations';
+import { CONNECTOR_DELETE_CASCADE_MUTATION } from '@lib/queries/connectors';
+import { EVSE_DELETE_CASCADE_MUTATION } from '@lib/queries/evses';
 import { ResourceType } from '@lib/utils/access.types';
 import { setSelectedChargingStation } from '@lib/utils/store/selected.charging.station.slice';
 import { getPlainToInstanceOptions } from '@lib/utils/tables';
-import { useOne } from '@refinedev/core';
+import { useDelete, useOne } from '@refinedev/core';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 
 interface EVSESListProps {
-  stationId: string;
+  id: number;
 }
+
+type PendingDeleteTarget =
+  | { type: 'connector'; item: ConnectorDto }
+  | { type: 'evse'; item: EvseDto };
 
 export const evsesFormUpsertGrid = 'grid grid-cols-2 xs:grid-cols-1 gap-6';
 
-export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
+export const EVSESList: React.FC<EVSESListProps> = ({ id }) => {
   const dispatch = useDispatch();
+  const {
+    mutate: deleteConnector,
+    mutation: { isPending: isDeletingConnector },
+  } = useDelete();
+  const {
+    mutate: deleteEvse,
+    mutation: { isPending: isDeletingEvse },
+  } = useDelete();
   const [isModalVisible, setIsModalVisible] = useState(false);
   const [modalType, setModalType] = useState<'evse' | 'connector' | null>(null);
   const [selectedItem, setSelectedItem] = useState<
     EvseClass | ConnectorClass | null
   >(null);
   const [evseId, setEvseId] = useState<number | null>(null);
+  const [pendingDeleteTarget, setPendingDeleteTarget] =
+    useState<PendingDeleteTarget | null>(null);
 
   const {
     query: { data, isLoading, refetch },
   } = useOne<ChargingStationDto>({
     resource: ResourceType.CHARGING_STATIONS,
-    id: stationId,
+    id,
     meta: {
       gqlQuery: CHARGING_STATIONS_GET_QUERY,
     },
     queryOptions: getPlainToInstanceOptions(ChargingStationClass, true),
   });
 
-  const station = data?.data;
+  const station = React.useMemo(() => {
+    const station = { ...data?.data } as ChargingStationDto;
+    return station;
+  }, [data?.data]);
 
   const openModal = useCallback(
     (
@@ -86,7 +106,7 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
   useEffect(() => {
     dispatch(
       setSelectedChargingStation({
-        selectedChargingStation: JSON.stringify(station),
+        selectedChargingStation: station,
       }),
     );
   }, [dispatch, station]);
@@ -134,12 +154,13 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
   );
 
   const renderModalContent = () => {
-    if (modalType === 'evse') {
+    if (modalType === 'evse' && station.id) {
       const currentEvse = getCurrentEvse(selectedItem);
       return (
         <EvseUpsert
           onSubmit={handleFormSubmit}
-          stationId={stationId}
+          stationId={station.id}
+          ocppConnectionName={station.ocppConnectionName}
           evse={currentEvse}
         />
       );
@@ -175,10 +196,65 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
     openModal('connector', connector, evseId);
   };
 
-  const handleConnectorAdd = (evseId: number | undefined) => {
-    if (evseId === undefined) return;
-    openModal('connector', null, evseId);
-  };
+  const handleConnectorDelete = useCallback(
+    (connector: ConnectorDto) => {
+      if (!connector.id) return;
+      setPendingDeleteTarget({ type: 'connector', item: connector });
+    },
+    [],
+  );
+
+  const handleEvseDelete = useCallback(
+    (evse: EvseDto) => {
+      if (!evse.id) return;
+      setPendingDeleteTarget({ type: 'evse', item: evse });
+    },
+    [],
+  );
+
+  const handleConfirmDelete = useCallback(() => {
+    if (!pendingDeleteTarget?.item.id) return;
+
+    if (pendingDeleteTarget.type === 'connector') {
+      deleteConnector(
+        {
+          id: pendingDeleteTarget.item.id,
+          resource: ResourceType.CONNECTORS,
+          meta: {
+            gqlMutation: CONNECTOR_DELETE_CASCADE_MUTATION,
+          },
+        },
+        {
+          onSuccess: () => {
+            setPendingDeleteTarget(null);
+            void refetch();
+          },
+        },
+      );
+      return;
+    }
+
+    deleteEvse(
+      {
+        id: pendingDeleteTarget.item.id,
+        resource: ResourceType.EVSES,
+        meta: {
+          gqlMutation: EVSE_DELETE_CASCADE_MUTATION,
+        },
+      },
+      {
+        onSuccess: () => {
+          setPendingDeleteTarget(null);
+          void refetch();
+        },
+      },
+    );
+  }, [deleteConnector, deleteEvse, pendingDeleteTarget, refetch]);
+
+  const deleteDialogDescription =
+    pendingDeleteTarget?.type === 'evse'
+      ? 'Delete this EVSE and its connectors? This action cannot be undone.'
+      : 'Delete this connector? This action cannot be undone.';
 
   if (isLoading) return <p>Loading...</p>;
   if (!station) return <p>No Data Found</p>;
@@ -246,6 +322,14 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
                             Edit
                           </Button>
                           <Button
+                            variant="destructive"
+                            size="sm"
+                            disabled={isDeletingEvse}
+                            onClick={() => handleEvseDelete(evse)}
+                          >
+                            Delete
+                          </Button>
+                          <Button
                             variant="outline"
                             size="sm"
                             onClick={() => openModal('connector', null, evseId)}
@@ -263,7 +347,8 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
                             onEdit={(connector) =>
                               handleConnectorEdit(connector, evseId)
                             }
-                            onAdd={() => handleConnectorAdd(evseId)}
+                            onDelete={handleConnectorDelete}
+                            isDeleting={isDeletingConnector}
                           />
                         </td>
                       </tr>
@@ -284,6 +369,22 @@ export const EVSESList: React.FC<EVSESListProps> = ({ stationId }) => {
           {renderModalContent()}
         </DialogContent>
       </Dialog>
+
+      <ConfirmDialog
+        open={pendingDeleteTarget !== null}
+        loading={isDeletingConnector || isDeletingEvse}
+        title="Are you sure?"
+        description={deleteDialogDescription}
+        okText="Delete"
+        cancelText="Cancel"
+        okButtonVariant="destructive"
+        onOpenChange={(open) => {
+          if (!open && !isDeletingConnector && !isDeletingEvse) {
+            setPendingDeleteTarget(null);
+          }
+        }}
+        onConfirm={handleConfirmDelete}
+      />
     </div>
   );
 };

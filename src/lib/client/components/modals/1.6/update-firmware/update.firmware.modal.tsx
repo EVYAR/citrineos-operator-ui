@@ -19,6 +19,7 @@ import { useMemo, useState } from 'react';
 import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface UpdateFirmwareModalProps {
   station: ChargingStationDto;
@@ -40,6 +41,8 @@ export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState<boolean>(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -56,7 +59,7 @@ export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
   });
 
   const handleSubmit = (values: UpdateFirmwareFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Update Firmware request because station ID is missing.',
       );
@@ -73,7 +76,7 @@ export const UpdateFirmwareModal = ({ station }: UpdateFirmwareModalProps) => {
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/configuration/updateFirmware?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/configuration/updateFirmware?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
       ocppVersion: OCPPVersion.OCPP1_6,

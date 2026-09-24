@@ -19,6 +19,7 @@ import { Form } from '@lib/client/components/form';
 import { FormField } from '@lib/client/components/form/field';
 import { Input } from '@lib/client/components/ui/input';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 interface GetLogsModalProps {
   station: any;
@@ -48,6 +49,8 @@ export const GetLogsModal = ({ station }: GetLogsModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
 
+  const tenantId = useTenantId();
+
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
     [station],
@@ -64,7 +67,7 @@ export const GetLogsModal = ({ station }: GetLogsModalProps) => {
   });
 
   const onFinish = async (values: GetLogsFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Get Logs request because station ID is missing.',
       );
@@ -90,9 +93,10 @@ export const GetLogsModal = ({ station }: GetLogsModalProps) => {
     };
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/reporting/getLog?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/reporting/getLog?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data,
       setLoading,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset();
       dispatch(closeModal());

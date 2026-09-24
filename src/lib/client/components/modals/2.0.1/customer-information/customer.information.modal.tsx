@@ -6,15 +6,13 @@
 import {
   type AuthorizationDto,
   type ChargingStationDto,
-  OCPPVersion,
 } from '@citrineos/base';
 import { zodResolver } from '@hookform/resolvers/zod';
 import {
+  CheckboxFormField,
   ComboboxFormField,
-  formCheckboxStyle,
   FormField,
 } from '@lib/client/components/form/field';
-import { Checkbox } from '@lib/client/components/ui/checkbox';
 import { Input } from '@lib/client/components/ui/input';
 import { ChargingStationClass } from '@lib/cls/charging.station.dto';
 import { AUTHORIZATIONS_LIST_QUERY } from '@lib/queries/authorizations';
@@ -30,6 +28,7 @@ import { useDispatch } from 'react-redux';
 import z from 'zod';
 import { Form } from '@lib/client/components/form';
 import { FormButtonVariants } from '@lib/client/components/buttons/form.button';
+import { useTenantId } from '@lib/client/hooks/useTenantId';
 
 export interface CustomerInformationModalProps {
   station: any;
@@ -55,6 +54,8 @@ export const CustomerInformationModal = ({
 }: CustomerInformationModalProps) => {
   const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
+
+  const tenantId = useTenantId();
 
   const parsedStation: ChargingStationDto = useMemo(
     () => plainToInstance(ChargingStationClass, station),
@@ -87,7 +88,7 @@ export const CustomerInformationModal = ({
   });
 
   const onFinish = (values: CustomerInformationFormData) => {
-    if (!parsedStation?.id) {
+    if (!parsedStation?.ocppConnectionName) {
       console.error(
         'Error: Cannot submit Customer Information request because station ID is missing.',
       );
@@ -112,10 +113,10 @@ export const CustomerInformationModal = ({
     }
 
     triggerMessageAndHandleResponse<MessageConfirmation[]>({
-      url: `/reporting/customerInformation?identifier=${parsedStation.id}&tenantId=1`,
+      url: `/reporting/customerInformation?identifier=${parsedStation.ocppConnectionName}&tenantId=${tenantId}`,
       data: payload,
       setLoading,
-      ocppVersion: OCPPVersion.OCPP2_0_1,
+      ocppVersion: parsedStation.protocol,
     }).then(() => {
       form.reset({
         requestId: 1,
@@ -148,13 +149,9 @@ export const CustomerInformationModal = ({
         <Input type="number" placeholder="Enter request ID" />
       </FormField>
 
-      <FormField control={form.control} label="Report" name="report">
-        <Checkbox className={formCheckboxStyle} />
-      </FormField>
+      <CheckboxFormField control={form.control} label="Report" name="report" />
 
-      <FormField control={form.control} label="Clear" name="clear">
-        <Checkbox className={formCheckboxStyle} />
-      </FormField>
+      <CheckboxFormField control={form.control} label="Clear" name="clear" />
 
       <FormField
         control={form.control}
