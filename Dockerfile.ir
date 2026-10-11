@@ -25,7 +25,7 @@ RUN \
   else echo "Lockfile not found." && exit 1; \
   fi
 
-FROM base AS builder
+FROM deps AS builder
 
 WORKDIR /app
 
@@ -65,7 +65,6 @@ ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL \
     GOOGLE_MAPS_API_KEY=$GOOGLE_MAPS_API_KEY \
     GOOGLE_MAPS_ADDRESS_API_KEY=$GOOGLE_MAPS_ADDRESS_API_KEY
 
-COPY --from=deps /app/node_modules ./node_modules
 
 COPY . .
 
