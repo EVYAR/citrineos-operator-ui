@@ -1,6 +1,6 @@
 ARG NODE_IMAGE=git.ev-yar.ir/evyar/node:24-alpine
 FROM ${NODE_IMAGE} AS base
-ARG NPM_REGISTRY=http://89.42.199.156:4873/
+ARG NPM_REGISTRY=https://npm.ev-yar.ir/
 
 # Use Iranian mirrors
 RUN ALPINE_VERSION=$(cat /etc/alpine-release | cut -d'.' -f1-2) && \
